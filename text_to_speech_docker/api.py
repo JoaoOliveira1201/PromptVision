@@ -15,6 +15,65 @@ logger = logging.getLogger(__name__)
 MODELS_LOCATION = {'default_man_en': '/app/voices/en_GB/en_GB-northern_english_male-medium.onnx',
                    'default_man_pt': '/app/voices/pt_PT/pt_PT-tugão-medium.onnx'}
 
+@app.route('/synthesize', method=['POST'])
+def synthesize_endpoint():
+
+    if request.forms.get('text') is None and request.query.text is None:
+        response.status = 400
+        return {'error': 'Missing required parameter: text'}
+    text = request.forms.get('text') or request.query.text
+
+    if request.forms.get('model_character') is None and request.query.model_character is None:
+        response.status = 400
+        return {'error': 'Missing required parameter: model_character'}
+    model_character = request.forms.get('model_character') or request.query.model_character
+    model_character = MODELS_LOCATION.get(model_character)
+
+    if request.forms.get('output_file_name') is None and request.query.output_file_name is None:
+        response.status = 400
+        return {'error': 'Missing required parameter: output_file_name'}
+    output_file_name = request.forms.get('output_file_name') or request.query.output_file_name
+
+    if request.forms.get('output_format') is None and request.query.output_format is None:
+        response.status = 400
+        return {'error': 'Missing required parameter: output_format'}
+    output_format = request.forms.get('output_format') or request.query.output_format or 'wav'
+    output_format = output_format.lower()
+
+    use_cuda_param = request.forms.get('use_cuda') or request.query.use_cuda
+    if use_cuda_param is not None:
+        use_cuda = use_cuda_param.lower() in ['true', '1', 'yes']
+    else:
+        use_cuda = True
+
+    try:
+        audio_data = synthesize(
+            text=text,
+            model_path=model_character,
+            output_file_name=output_file_name,
+            output_format=output_format,
+            use_cuda=use_cuda
+        )
+    except Exception as e:
+        response.status = 500
+        return {'error': str(e)}
+
+    # Set the correct content-type
+    if output_format == 'wav':
+        response.content_type = 'audio/wav'
+        file_extension = 'wav'
+    elif output_format == 'mp3':
+        response.content_type = 'audio/mpeg'
+        file_extension = 'mp3'
+    else:
+        response.content_type = 'application/octet-stream'
+
+    # Optionally set Content-Disposition header if output_file_name is provided
+    if output_file_name:
+        response.headers['Content-Disposition'] = f'attachment; filename="{Path(output_file_name).name}.{file_extension}"'
+
+    return audio_data
+
 def synthesize(text, model_path, output_file_name=None, speaker_id=None, output_format='wav', use_cuda=True):
     """
     Synthesizes speech from the given text.
