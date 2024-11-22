@@ -101,33 +101,6 @@ dmypy.json
 .ropeproject/
 
 # ============================
-# Docker
-# ============================
-
-# Docker files
-Dockerfile
-docker-compose.yml
-
-# Ignore Docker-specific files you don't want to track
-# Uncomment if you have these files and want to ignore them
-# docker-compose.override.yml
-# docker-compose.*.yml
-
-# Docker directories
-.docker/
-docker/
-docker-compose.override.yml
-
-# Docker images and containers (usually not in repo, but just in case)
-*.tar
-*.tar.gz
-*.tgz
-
-# Environment files
-.env
-.env.*
-
-# ============================
 # JavaScript and npm
 # ============================
 
