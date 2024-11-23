@@ -1,20 +1,19 @@
 # Use NVIDIA CUDA base image with Python 3.10
-FROM nvidia/cuda:11.7.1-cudnn8-runtime-ubuntu22.04
+#FROM nvidia/cuda:11.7.1-cudnn8-runtime-ubuntu22.04
+FROM python:3.10-slim-bullseye
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     PIP_NO_CACHE_DIR=1 \
-    DEBIAN_FRONTEND=noninteractive \
-    NVIDIA_VISIBLE_DEVICES=all \
-    NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    DEBIAN_FRONTEND=noninteractive
+    #\
+    #NVIDIA_VISIBLE_DEVICES=all \
+    #NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
 # Install Python and other system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3.10 \
-    python3.10-dev \
-    python3-pip \
     git \
     wget \
     build-essential \
@@ -27,9 +26,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     && rm -rf /var/lib/apt/lists/*
 
-# Ensure python3 points to python3.10
-RUN ln -s /usr/bin/python3.10 /usr/local/bin/python
-
 # Upgrade pip and install pip version 23.0.1
 RUN python -m pip install --upgrade pip && pip install pip==23.0.1
 
@@ -40,8 +36,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install CUDA-compatible PyTorch
-RUN pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1+cu117 -f https://download.pytorch.org/whl/torch_stable.html
+# Install CPU-only PyTorch
+#RUN pip install torch==1.13.1+cpu torchvision==0.14.1+cpu torchaudio==0.13.1+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
 
 # Clone the Piper repository
 RUN git clone -q https://github.com/rmcpantoja/piper /usr/local/piper
@@ -82,9 +78,9 @@ RUN pip install --no-cache-dir gunicorn
 RUN echo "ALL ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Set NVIDIA runtime to enforce GPU usage
-ENV NVIDIA_VISIBLE_DEVICES=all \
-    NVIDIA_REQUIRE_CUDA="cuda>=11.7" \
-    NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
+#ENV NVIDIA_VISIBLE_DEVICES=all \
+#    NVIDIA_REQUIRE_CUDA="cuda>=11.7" \
+#    NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
 
 # Define the entrypoint to run the API using Gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "4", "--threads", "2", "api:app"]
