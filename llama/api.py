@@ -1,5 +1,5 @@
-from fastapi import FastAPI, HTTPException, Body
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 import boto3
 from botocore.exceptions import ClientError
 
@@ -17,37 +17,51 @@ except Exception as e:
     print(f"Failed to initialize Bedrock client: {str(e)}")
     raise
 
+class ChatRequest(BaseModel):
+    input_text: str
+    duration_minutes: float = Field(default=1.0, gt=0, description="Duration in minutes")
+
 class ChatResponse(BaseModel):
     response_text: str
 
-@app.post("/chat", response_model=ChatResponse)
-async def chat(input_text: str = Body(..., embed=True)):
+def calculate_max_tokens(duration_minutes: float) -> int:
+    """
+    Calculate maximum tokens based on duration in minutes.
+    """
+    words_per_minute = 200
+    tokens_per_word = 1.5
+    base_tokens = 100
+    
+    calculated_tokens = int(duration_minutes * words_per_minute * tokens_per_word)
+    return max(base_tokens, min(calculated_tokens, 4096))
+
+@app.post("/chat")
+async def chat(request: ChatRequest):
     """
     Endpoint to handle chat conversations using AWS Bedrock's `converse` method.
     """
     try:
-        # Prepare the conversation payload
+        max_tokens = calculate_max_tokens(request.duration_minutes)
+        
         conversation = [
             {
                 "role": "user",
-                "content": [{"text": input_text}]
+                "content": [{"text": request.input_text}]
             }
         ]
 
-        # Send the request to Bedrock using the `converse` method
         response = client.converse(
-            modelId="meta.llama3-1-405b-instruct-v1:0",
+            modelId="meta.llama3-1-70b-instruct-v1:0",
             messages=conversation,
             inferenceConfig={
-                "maxTokens": 512,
+                "maxTokens": max_tokens,
                 "temperature": 0.5,
                 "topP": 0.9,
             },
         )
 
-        # Extract the response text
         response_text = response["output"]["message"]["content"][0]["text"]
-        return ChatResponse(response_text=response_text.strip())
+        return {"response_text": response_text.strip()}
 
     except ClientError as e:
         error_code = e.response.get("Error", {}).get("Code", "Unknown")
