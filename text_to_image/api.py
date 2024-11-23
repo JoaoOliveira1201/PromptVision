@@ -45,7 +45,7 @@ class ErrorResponse(BaseModel):
 
 # Initialize Bedrock client
 try:
-    boto3_bedrock = boto3.client('bedrock-runtime')
+    boto3_bedrock = boto3.client('bedrock-runtime',region_name="us-west-2")
 except Exception as e:
     print(f"Failed to initialize Bedrock client: {str(e)}")
     raise

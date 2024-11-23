@@ -10,7 +10,7 @@ import boto3
 from PIL import Image
 import botocore
 
-boto3_bedrock = boto3.client('bedrock-runtime')
+boto3_bedrock = boto3.client('bedrock-runtime',)
 
 prompt = "A futuristic digital representation of blockchain technology with interconnected glowing blue and green data blocks forming a decentralized network. Golden bitcoins float around the network, each shining with intricate details of their coin engravings. The background is dark with a gradient of deep blue and black, featuring faint binary code streams and holographic financial charts. The style is hyper-realistic with cinematic lighting and a tech-inspired theme."
 negative_prompts = "Avoid poorly rendered coins, disconnected or chaotic data blocks, dull lighting, excessive brightness, or simplistic representations of blockchain."
