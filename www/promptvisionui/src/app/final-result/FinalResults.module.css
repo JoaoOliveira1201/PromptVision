@@ -1,0 +1,193 @@
+
+@import url(https://fonts.googleapis.com/css?family=Manjari);
+.container {
+    display: flex;
+    height: 100vh;
+    font-family: 'Manjari', sans-serif;
+    overflow: hidden;
+    background-color: #000;
+  }
+  
+  .leftPanel {
+    position: relative;
+    flex: 0.5;
+    background-color: #666;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    padding: 40px;
+    z-index: 1;
+    box-shadow: #000 0px 0px 45px 20px;
+   
+  }
+  
+  .title {
+    display: flex;
+    flex-direction: column;
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 40px;
+  }
+  
+  .section {
+    margin-bottom: 30px;
+  }
+  
+  .sectionTitle {
+    font-size: 1.2rem;
+    color: #999;
+    margin-bottom: 15px;
+  }
+  
+  .colorGroups {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .colorGroup {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .colorDot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+  }
+  .colorDotSquare {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px; /* Slightly rounded corners */
+    background-color: #FF0000;
+}
+
+/* Styling for static chromatic circle color picker */
+.colorPickerCircle {
+    width: 30px;
+    height: 30px;
+    border: none;
+    padding: 0;
+    border-radius: 50%; /* Make it circular */
+    cursor: pointer;
+    appearance: none;
+    background-color: transparent;
+    position: relative;
+}
+
+/* Chromatic gradient background for the circle (always visible) */
+.colorPickerCircle::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    background: conic-gradient(
+        red, yellow, lime, aqua, blue, magenta, red
+    );
+    z-index: -1;
+}
+
+/* Hide the default color swatch so it does not override the chromatic circle */
+.colorPickerCircle::-webkit-color-swatch {
+    opacity: 0; /* Hide the swatch completely */
+}
+
+.colorPickerCircle::-webkit-color-swatch-wrapper {
+    padding: 0;
+    border-radius: 50%;
+}
+  
+  .dropButton {
+    padding: 12px 20px;
+    background-color: #333;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    width: 100%;
+    text-align: left;
+  }
+  
+  .buttonGroup {
+    display: flex;
+    gap: 15px;
+    margin-top: auto;
+  }
+  
+  .redoButton, .downloadButton {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 25px;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .redoButton {
+    background-color: #333;
+    color: #fff;
+  }
+  
+  .downloadButton {
+    background-color: #ff6a00;
+    color: #fff;
+  }
+  
+  .rightPanel {
+    flex: 1;
+    background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/Rectangle6.png');
+    justify-content: center;
+    
+    display: flex;
+    flex-direction: column;
+    padding: 40px;
+    position: relative;
+    z-index: 0;
+  }
+  .topImage {
+    position: absolute;
+    top: 20px; /* Adjust as needed */
+    width: 100%; /* Adjust width as needed */
+    max-width: 500px; /* Set a maximum width if needed */
+    z-index: 2;
+    align-self: center;
+}
+  
+  .videoPlaceholder {
+    flex: 1;
+    max-height: 500px;
+    background-color: #444;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  
+  .videoIcon {
+    font-size: 48px;
+    opacity: 0.5;
+  }
+  
+  .planetDecorations {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px;
+  }
+  
+  .planet {
+    border-radius: 50%;
+    background-color: #fff;
+  }
