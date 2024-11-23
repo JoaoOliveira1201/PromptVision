@@ -1,0 +1,171 @@
+/* styles/AddYourVoice.module.css */
+@import url(https://fonts.googleapis.com/css?family=Manjari);
+.container {
+  display: flex;
+  height: 100vh;
+  font-family: 'Manjari', sans-serif;
+  overflow: hidden;
+  background-color: #000;
+}
+.leftPanel {
+  position: relative;
+  flex: 1;
+  background-image: url('/Rectangle6.png');
+  background-color: #000;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 40px;
+  z-index: 1;
+  box-shadow: #000 0px 0px 40px 15px;
+}
+
+.leftPanel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: -1;
+}
+.title {
+  display: flex;
+  flex-direction: column;
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 40px;
+}
+
+.languageOptions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.languageButton {
+  padding: 8px 20px;
+  background-color: #333;
+  color: #fff;
+  border: none;
+  border-radius: 25px;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.languageButton.active {
+  background-color: #ff6a00;
+}
+
+.flag {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.textContainer {
+  width: 100%;
+  flex-grow: 1;
+  margin-bottom: 20px;
+}
+
+.textbox {
+  width: 100%;
+  height: 100%;
+  padding: 15px;
+  font-size: 1rem;
+  color: #fff;
+  background-color: #1a1a1a;
+  border: none;
+  border-radius: 8px;
+  resize: none;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 15px;
+}
+
+.cancelButton, .startRecordingButton {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 25px;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cancelButton {
+  background-color: #333;
+  color: #fff;
+}
+
+.startRecordingButton {
+  background-color: #ff6a00;
+  color: #fff;
+}
+
+.rightPanel {
+  flex: 1;
+  background-color: #666;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 40px;
+  position: relative; /* Added for positioning */
+  z-index: 0;
+}
+
+.astronautImage {
+  position: absolute;
+  bottom: 0;
+  left: -30%; /* Adjust this value to control how far it extends under the left panel */
+  width: 100%; /* Adjust size as needed */
+  height: 100%;
+  z-index: 0; /* Keeps it behind the content */
+}
+
+.rightTitle {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  color: #fff;
+}
+
+.rightDescription {
+  text-align: left;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #fff;
+  margin-bottom: 20px; /* Added spacing before button */
+}
+
+.goBackButton {
+  background-color: #ff6a00;
+  color: #fff;
+  padding: 12px 30px;
+  border: none;
+  border-radius: 25px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin-left: auto; /* This will push the button to the right */
+    display: block; /* Added top margin for spacing */
+}
+
+.imageContainer {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 300px;
+  z-index: 1;
+}
+
+.centralImage {
+  width: 100%;
+  height: auto;
+}
