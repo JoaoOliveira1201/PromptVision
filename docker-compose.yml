@@ -32,3 +32,16 @@ services:
     container_name: deepfake_container
     ports:
       - "7000:8080"
+
+  backend:
+    <<: *common
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: backend_image:latest
+    container_name: backend_container
+    ports:
+      - "8000:8000"
+    depends_on:
+      - text_to_speech_service
+      - deepfake_service
