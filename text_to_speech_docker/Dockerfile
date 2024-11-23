@@ -34,10 +34,7 @@ WORKDIR /app
 
 # Copy and install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Install CPU-only PyTorch
-#RUN pip install torch==1.13.1+cpu torchvision==0.14.1+cpu torchaudio==0.13.1+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
+RUN pip install -r requirements.txt
 
 # Clone the Piper repository
 RUN git clone -q https://github.com/rmcpantoja/piper /usr/local/piper
@@ -57,6 +54,8 @@ RUN pip install .
 
 # Return to the /app directory
 WORKDIR /app
+
+RUN mkdir characters
 
 # Create directory for voices and copy model files
 COPY voices /app/voices

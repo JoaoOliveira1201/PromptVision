@@ -22,34 +22,19 @@ MODELS_LOCATION = {
 def synthesize_endpoint():
     logger.info("Received a request to synthesize speech.")
 
-    # Extract and validate input parameters
     text = request.forms.get('text') or request.query.text
     if not text:
         logger.error("Missing required parameter: text")
         response.status = 400
         return {'error': 'Missing required parameter: text'}
 
-    model_character = request.forms.get('model_character') or request.query.model_character
-    if not model_character:
-        logger.error("Missing required parameter: model_character")
-        response.status = 400
-        return {'error': 'Missing required parameter: model_character'}
-    model_path = MODELS_LOCATION.get(model_character)
-    if not model_path:
-        logger.error(f"Invalid model_character: {model_character}")
-        response.status = 400
-        return {'error': f'Invalid model_character: {model_character}'}
-
-    output_file_name = request.forms.get('output_file_name') or request.query.output_file_name
-    if not output_file_name:
-        logger.error("Missing required parameter: output_file_name")
-        response.status = 400
-        return {'error': 'Missing required parameter: output_file_name'}
-
+    output_file_name = (request.forms.get('output_file_name') or request.query.output_file_name or "placeholderAudio")
+    model_character = (request.forms.get('model_character') or request.query.model_character or 'default_man_en')
     output_format = (request.forms.get('output_format') or request.query.output_format or 'wav').lower()
     use_cuda_param = request.forms.get('use_cuda') or request.query.use_cuda
-    use_cuda = use_cuda_param.lower() in ['true', '1', 'yes'] if use_cuda_param is not None else True
+    use_cuda = use_cuda_param.lower() in ['true', '1', 'yes'] if use_cuda_param is not None else False
 
+    model_path = MODELS_LOCATION.get(model_character)
     logger.info(f"Text: {text}, Model: {model_character}, Output Format: {output_format}, CUDA: {use_cuda}")
 
     try:
@@ -67,7 +52,6 @@ def synthesize_endpoint():
         response.status = 500
         return {'error': str(e)}
 
-    # Set response headers
     if output_format == 'wav':
         response.content_type = 'audio/wav'
         file_extension = 'wav'
@@ -194,3 +178,39 @@ def synthesize(text, model_path, output_file_name=None, speaker_id=None, output_
                     logger.debug(f"Deleted temporary file: {temp_file}")
             except Exception as e:
                 logger.warning(f"Failed to delete temporary file {temp_file}: {str(e)}")
+
+@app.route('/upload', method=['POST'])
+def upload_audio():
+    logger.info("Received a request to upload an audio file.")
+
+    upload = request.files.get('file')  # The name of the file input field should be 'file'
+
+    if not upload:
+        logger.error("No file uploaded")
+        response.status = 400
+        return {'error': 'No file uploaded'}
+
+    # The directory to save the file
+    save_dir = '/app/characters'
+
+    # Ensure the directory exists
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir, exist_ok=True)
+        logger.debug(f"Created directory: {save_dir}")
+
+    # Define the default filename
+    default_filename = 'default_audio_file.wav'  # Adjust the filename as needed
+
+    # Build the full file path
+    file_path = os.path.join(save_dir, default_filename)
+
+    try:
+        # Save the file to the specified path
+        upload.save(file_path, overwrite=True)
+        logger.info(f"File saved to {file_path}")
+        response.status = 200
+        return {'status': 'File uploaded successfully'}
+    except Exception as e:
+        logger.error(f"Error saving file: {str(e)}")
+        response.status = 500
+        return {'error': str(e)}
