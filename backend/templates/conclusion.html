@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conclusion Slide</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #e3f2fd, #ffffff);
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      width: 100vw;
+      color: #333;
+    }
+    .slide {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      box-sizing: border-box;
+      background: #ffffff;
+      color: #333;
+    }
+    .thank-you {
+      font-size: 4em;
+      color: #0077cc;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .call-to-action {
+      font-size: 2em;
+      color: #555;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <div class="thank-you">{{ thank_you }}</div>
+    <div class="call-to-action">{{ call_to_action }}</div>
+  </div>
+</body>
+</html>
