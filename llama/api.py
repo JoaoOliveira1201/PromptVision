@@ -1,22 +1,31 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 import boto3
 from botocore.exceptions import ClientError
 import json
 
+# Initialize FastAPI application
 app = FastAPI(
     title="Bedrock Chat API",
     description="API for conversing with AWS Bedrock LLM models",
     version="1.0.0"
 )
 
+# Initialize AWS Bedrock Runtime client
+try:
+    client = boto3.client("bedrock-runtime", region_name="us-west-2")
+    print(client)
+except Exception as e:
+    print(f"Failed to initialize Bedrock client: {str(e)}")
+    raise
+
 # Pydantic models for request validation
 class MessageContent(BaseModel):
     text: str
 
 class Message(BaseModel):
-    role: str = Field(..., pattern="^(user|assistant)$")
+    role: str = Field(..., pattern="^(user|assistant)$")  # Updated `regex` to `pattern`
     content: List[MessageContent]
 
 class InferenceConfig(BaseModel):
@@ -37,38 +46,36 @@ class ErrorResponse(BaseModel):
     error: str
     details: Optional[str] = None
 
-# Initialize Bedrock client
-try:
-    bedrock_client = boto3.client('bedrock-runtime', region_name="us-west-2")
-except Exception as e:
-    print(f"Failed to initialize Bedrock client: {str(e)}")
-    raise
-
-@app.post(
-    "/chat",
-    response_model=ChatResponse,
-    responses={
-        400: {"model": ErrorResponse},
-        500: {"model": ErrorResponse}
-    }
-)
+@app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
+    """
+    Endpoint to handle chat conversations using AWS Bedrock's `converse` method.
+    """
     try:
-        # Send the message to the model
-        response = bedrock_client.converse(
+        # Prepare the conversation payload
+        conversation = [
+            {
+                "role": message.role,
+                "content": [{"text": content.text} for content in message.content]
+            }
+            for message in request.messages
+        ]
+
+        # Send the request to Bedrock using the `converse` method
+        response = client.converse(
             modelId=request.model_id,
-            messages=[message.dict() for message in request.messages],
+            messages=conversation,
             inferenceConfig={
                 "maxTokens": request.inference_config.maxTokens,
                 "temperature": request.inference_config.temperature,
-                "topP": request.inference_config.topP
-            }
+                "topP": request.inference_config.topP,
+            },
         )
 
         # Extract the response text
         response_text = response["output"]["message"]["content"][0]["text"]
 
-        # Update conversation history
+        # Append the response to the conversation history
         updated_conversation = request.messages.copy()
         updated_conversation.append(
             Message(
@@ -85,61 +92,47 @@ async def chat(request: ChatRequest):
     except ClientError as e:
         error_code = e.response.get("Error", {}).get("Code", "Unknown")
         error_message = e.response.get("Error", {}).get("Message", str(e))
+        print(f"AWS Bedrock Error ({error_code}): {error_message}")
         raise HTTPException(
             status_code=400,
             detail=f"AWS Bedrock Error ({error_code}): {error_message}"
         )
-    
+
     except Exception as e:
+        print(f"Unexpected error: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Internal server error: {str(e)}"
         )
 
-@app.post("/chat/simple")
-async def simple_chat(message: str, 
-                     model_id: str = "meta.llama3-1-405b-instruct-v1:0",
-                     max_tokens: int = 512,
-                     temperature: float = 0.5,
-                     top_p: float = 0.9):
+@app.get("/test-bedrock")
+def test_bedrock():
     """
-    Simplified endpoint for single-message conversations
+    Test endpoint to ensure `converse` works with a simple payload.
     """
-    conversation = [
-        Message(
-            role="user",
-            content=[MessageContent(text=message)]
+    try:
+        response = client.converse(
+            modelId="meta.llama3-1-405b-instruct-v1:0",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [{"text": "how do I create a branch?"}]
+                }
+            ],
+            inferenceConfig={
+                "maxTokens": 512,
+                "temperature": 0.5,
+                "topP": 0.9
+            },
         )
-    ]
-    
-    request = ChatRequest(
-        messages=conversation,
-        model_id=model_id,
-        inference_config=InferenceConfig(
-            maxTokens=max_tokens,
-            temperature=temperature,
-            topP=top_p
-        )
-    )
-    
-    return await chat(request)
-
-@app.get("/models")
-async def list_available_models():
-    """
-    List available Bedrock models
-    """
-    return {
-        "models": [
-            {
-                "id": "meta.llama3-1-405b-instruct-v1:0",
-                "name": "Llama 3 8b Instruct",
-                "description": "Meta's Llama 3 model optimized for instruction following"
-            }
-            # Add other models as they become available
-        ]
-    }
+        return {"response": response}
+    except Exception as e:
+        print(f"Error testing Bedrock: {str(e)}")
+        return {"error": str(e)}
 
 @app.get("/health")
 async def health_check():
+    """
+    Health check endpoint to verify if the API is running.
+    """
     return {"status": "healthy"}
