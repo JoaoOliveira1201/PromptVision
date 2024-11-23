@@ -15,11 +15,11 @@ use_cuda = False  # Set to False if you want to test without CUDA
 def test_synthesize():
     # Prepare the payload
     payload = {
-        'text': test_text,
-        'model_character': model_character,
-        'output_file_name': output_file_name,
-        'output_format': output_format,
-        'use_cuda': str(use_cuda).lower()  # Convert to 'true' or 'false'
+        'text': test_text #,
+        #'model_character': model_character,
+        #'output_file_name': output_file_name,
+        #'output_format': output_format,
+        #'use_cuda': str(use_cuda).lower()  # Convert to 'true' or 'false'
     }
 
     try:
