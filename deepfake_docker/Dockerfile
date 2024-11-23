@@ -1,4 +1,3 @@
-# Use Ubuntu base image instead of CUDA
 FROM ubuntu:18.04
 
 # Set up working directory
@@ -17,25 +16,22 @@ RUN apt-get update && apt-get install -y \
     libxrender-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Remove NVIDIA-specific environment variables since we're not using GPU
-# ENV NVIDIA_VISIBLE_DEVICES=all \
-#     NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
-
 # Install Python build dependencies
-RUN pip3 install --upgrade pip \
-    && pip3 install scikit-build setuptools wheel
+RUN pip3 install --no-cache-dir --upgrade pip \
+    && pip3 install --no-cache-dir scikit-build setuptools wheel
 
 # Copy only requirements.txt first to leverage caching
 COPY requirements.txt /app/
 
 # Install Python dependencies
-RUN pip3 install -r requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the app files into the container
 COPY . /app
 
 # Ensure necessary directories exist
 RUN mkdir -p /app/uploads /app/outputs /app/characters /app/temp
+RUN chmod -R 777 /app/uploads /app/outputs /app/characters /app/temp
 
 # Everyone is sudo. We trust everyone.
 RUN echo "ALL ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers

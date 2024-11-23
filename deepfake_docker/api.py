@@ -83,6 +83,12 @@ def generate_deepfake():
         logger.info(f"Wav2Lip inference completed in {duration} seconds")
         logger.debug(f"Subprocess stdout: {result.stdout}")
         logger.debug(f"Subprocess stderr: {result.stderr}")
+
+        if result.returncode != 0:
+            logger.error(f"Wav2Lip inference failed with return code {result.returncode}")
+            response.status = 500
+            return {"error": f"Wav2Lip inference failed: {result.stderr}"}
+
     except subprocess.CalledProcessError as e:
         logger.error(f"Wav2Lip inference failed: {e.stderr}")
         response.status = 500
