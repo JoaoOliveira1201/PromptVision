@@ -6,11 +6,11 @@ x-common-configuration: &common
   #  - NVIDIA_DRIVER_CAPABILITIES=compute,utility
   volumes:
     - ./data:/app/data
-  shm_size: '12gb'  # Common shared memory size for all services
-  deploy:
-    resources:
-      limits:
-        memory: 12G  # Common memory limit for all services
+  #shm_size: '12gb'  # Common shared memory size for all services
+  #deploy:
+  #  resources:
+  #    limits:
+  #      memory: 12G  # Common memory limit for all services
 
 services:
   text_to_speech_service:
@@ -22,3 +22,13 @@ services:
     container_name: text_to_speech_container
     ports:
       - "8080:8080"
+
+  deepfake_service:
+    <<: *common
+    build:
+      context: ./deepfake_docker
+      dockerfile: Dockerfile
+    image: deepfake_image:latest
+    container_name: deepfake_container
+    ports:
+      - "7000:8080"
