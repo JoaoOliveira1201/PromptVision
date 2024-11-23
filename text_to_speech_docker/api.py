@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 MODELS_LOCATION = {'default_man_en': '/app/voices/en_GB/en_GB-northern_english_male-medium.onnx',
                    'default_man_pt': '/app/voices/pt_PT/pt_PT-tugão-medium.onnx'}
 
+
 @app.route('/synthesize', method=['POST'])
 def synthesize_endpoint():
-
     if request.forms.get('text') is None and request.query.text is None:
         response.status = 400
         return {'error': 'Missing required parameter: text'}
@@ -27,7 +27,7 @@ def synthesize_endpoint():
         response.status = 400
         return {'error': 'Missing required parameter: model_character'}
     model_character = request.forms.get('model_character') or request.query.model_character
-    model_character = MODELS_LOCATION.get(model_character)
+    model_path = MODELS_LOCATION.get(model_character)
 
     if request.forms.get('output_file_name') is None and request.query.output_file_name is None:
         response.status = 400
@@ -49,10 +49,11 @@ def synthesize_endpoint():
     try:
         audio_data = synthesize(
             text=text,
-            model_path=model_character,
+            model_path=model_path,
             output_file_name=output_file_name,
             output_format=output_format,
-            use_cuda=use_cuda
+            use_cuda=use_cuda,
+            is_portuguese=model_character == 'default_man_pt'
         )
     except Exception as e:
         response.status = 500
@@ -70,11 +71,14 @@ def synthesize_endpoint():
 
     # Optionally set Content-Disposition header if output_file_name is provided
     if output_file_name:
-        response.headers['Content-Disposition'] = f'attachment; filename="{Path(output_file_name).name}.{file_extension}"'
+        response.headers[
+            'Content-Disposition'] = f'attachment; filename="{Path(output_file_name).name}.{file_extension}"'
 
     return audio_data
 
-def synthesize(text, model_path, output_file_name=None, speaker_id=None, output_format='wav', use_cuda=True):
+
+def synthesize(text, model_path, output_file_name=None, speaker_id=None, output_format='wav', use_cuda=True,
+               is_portuguese=False):
     """
     Synthesizes speech from the given text.
 
@@ -84,12 +88,18 @@ def synthesize(text, model_path, output_file_name=None, speaker_id=None, output_
     :param output_file_name: Optional path to save the output audio file
     :param speaker_id: Optional speaker ID for multi-speaker models
     :param output_format: Output audio format, 'wav' or 'mp3' (default 'wav')
+    :param is_portuguese: Boolean indicating if using Portuguese model (for speed adjustment)
     :return: The synthesized audio data as bytes
     """
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp_wav_file:
+    temp_files = []
+    try:
+        # Create temporary WAV file
+        tmp_wav_file = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
+        temp_files.append(tmp_wav_file.name)
+
         cmd = [
-            'python3',                # Use Python to run Piper
-            '-m', 'piper',            # Invoke Piper as a module
+            'python3',  # Use Python to run Piper
+            '-m', 'piper',  # Invoke Piper as a module
             '--model', model_path,
             '--output_file', tmp_wav_file.name
         ]
@@ -97,58 +107,63 @@ def synthesize(text, model_path, output_file_name=None, speaker_id=None, output_
             cmd.append('--cuda')
         if speaker_id is not None:
             cmd.extend(['--speaker', str(speaker_id)])
-        try:
-            # Run the Piper command
-            process = subprocess.run(
-                cmd,
-                input=text.encode('utf-8'),
+
+        # Run the Piper command
+        process = subprocess.run(
+            cmd,
+            input=text.encode('utf-8'),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=True
+        )
+
+        input_file = tmp_wav_file.name
+
+        # If Portuguese, slow down the audio
+        if is_portuguese:
+            tmp_slow_wav = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
+            temp_files.append(tmp_slow_wav.name)
+
+            slow_cmd = [
+                'ffmpeg',
+                '-y',
+                '-i', input_file,
+                '-filter:a', 'atempo=0.9',
+                tmp_slow_wav.name
+            ]
+            subprocess.run(
+                slow_cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 check=True
             )
+            input_file = tmp_slow_wav.name
 
-            # Read the WAV audio data
-            with open(tmp_wav_file.name, 'rb') as f:
-                wav_data = f.read()
+        # Convert to MP3 if requested
+        if output_format.lower() == 'mp3':
+            tmp_mp3_file = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
+            temp_files.append(tmp_mp3_file.name)
 
-            # Convert to MP3 if requested
-            if output_format.lower() == 'mp3':
-                with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_mp3_file:
-                    ffmpeg_cmd = [
-                        'ffmpeg',
-                        '-y',  # Overwrite output file if it exists
-                        '-i', tmp_wav_file.name,
-                        '-f', 'mp3',
-                        tmp_mp3_file.name
-                    ]
-                    # Run the FFmpeg command to convert WAV to MP3
-                    subprocess.run(
-                        ffmpeg_cmd,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        check=True
-                    )
-                    # Read the MP3 audio data
-                    with open(tmp_mp3_file.name, 'rb') as f_mp3:
-                        audio_data = f_mp3.read()
-                # Remove the temporary MP3 file
-                os.unlink(tmp_mp3_file.name)
-            elif output_format.lower() == 'wav':
-                audio_data = wav_data
-            else:
-                raise ValueError("Invalid output_format. Choose 'wav' or 'mp3'.")
+            ffmpeg_cmd = [
+                'ffmpeg',
+                '-y',
+                '-i', input_file,
+                '-f', 'mp3',
+                tmp_mp3_file.name
+            ]
+            subprocess.run(
+                ffmpeg_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=True
+            )
+            final_file = tmp_mp3_file.name
+        else:
+            final_file = input_file
 
-        except subprocess.CalledProcessError as e:
-            error_message = e.stderr.decode('utf-8') if e.stderr else str(e)
-            raise RuntimeError(f"Subprocess error: {error_message}")
-        except PermissionError as pe:
-            raise RuntimeError(f"Permission error: {str(pe)}")
-        except Exception as ex:
-            raise RuntimeError(f"Unexpected error: {str(ex)}")
-        finally:
-            # Remove the temporary WAV file
-            if os.path.exists(tmp_wav_file.name):
-                os.unlink(tmp_wav_file.name)
+        # Read the final audio data
+        with open(final_file, 'rb') as f:
+            audio_data = f.read()
 
         # Save the audio data to the output file if provided
         if output_file_name:
@@ -160,3 +175,19 @@ def synthesize(text, model_path, output_file_name=None, speaker_id=None, output_
                 f_out.write(audio_data)
 
         return audio_data
+
+    except subprocess.CalledProcessError as e:
+        error_message = e.stderr.decode('utf-8') if e.stderr else str(e)
+        raise RuntimeError(f"Subprocess error: {error_message}")
+    except PermissionError as pe:
+        raise RuntimeError(f"Permission error: {str(pe)}")
+    except Exception as ex:
+        raise RuntimeError(f"Unexpected error: {str(ex)}")
+    finally:
+        # Clean up all temporary files
+        for temp_file in temp_files:
+            try:
+                if os.path.exists(temp_file):
+                    os.unlink(temp_file)
+            except Exception as e:
+                logger.warning(f"Failed to delete temporary file {temp_file}: {str(e)}")
