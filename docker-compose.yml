@@ -1,9 +1,9 @@
 x-common-configuration: &common
   restart: unless-stopped
-  #runtime: nvidia
-  #environment:
-  #  - NVIDIA_VISIBLE_DEVICES=all
-  #  - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+  runtime: nvidia
+  environment:
+    - NVIDIA_VISIBLE_DEVICES=all
+    - NVIDIA_DRIVER_CAPABILITIES=compute,utility
   volumes:
     - ./data:/app/data
   #shm_size: '12gb'  # Common shared memory size for all services
