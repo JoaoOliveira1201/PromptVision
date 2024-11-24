@@ -78,7 +78,9 @@ services:
     build:
       context: ./www/promptvisionui
       dockerfile: Dockerfile
+    image: promptvisionui-nextjs
     container_name: promptvisionui-nextjs
+
     environment:
       - NODE_ENV=production
     expose:
