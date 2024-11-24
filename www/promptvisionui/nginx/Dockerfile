@@ -1,6 +1,7 @@
-FROM promptvisionui-nextjs as builder
-
+FROM nginx:alpine as builder
 # Remove the default Nginx configuration
+RUN ls -la /etc/nginx/conf.d/
+RUN ls -la /etc/nginx/
 RUN rm /etc/nginx/conf.d/default.conf
 
 # Copy custom Nginx configuration
