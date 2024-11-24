@@ -1,9 +1,11 @@
+import json
 import logging
 from typing import Optional, List
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Request
 from pydantic import HttpUrl
 import random
 import os
+from PIL import Image, ImageDraw
 
 from presentation_builder import PresentationBuilder
 from slide_renderer import SlideRenderer
@@ -66,6 +68,7 @@ async def generate_presentation(
 
         logger.info("Generating presentation content using LLM...")
         presentation_content = await generate_presentation_content(text_content, duration, detail_level, character)
+        logger.info(presentation_content)
 
         logger.info("Generating images using Stable Diffusion...")
         tittles = extract_tittles_from_presentation_content(presentation_content)
@@ -92,37 +95,78 @@ async def generate_presentation(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def create_placeholder_slide(filename):
+    """Generate a placeholder slide when an error occurs."""
+    image = Image.new('RGB', (1920, 1080), color=(255, 255, 255))
+    draw = ImageDraw.Draw(image)
+    draw.text((100, 100), "Error generating slide", fill=(0, 0, 0))
+    image.save(filename)
+
 def generate_slides(presentation_content, image_file_paths, output_dir) -> List[str]:
+    import logging
+    logger = logging.getLogger(__name__)
+    logging.basicConfig(level=logging.INFO)
+
     logger.info("Generating individual slides...")
     slide_renderer = SlideRenderer()
     main_slide_template_options = ["slide_1.html", "slide_2.html"]
     slide_file_paths = []
     count = 0
 
+    # Ensure the output directory exists
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Parse presentation_content if it's a string
+    if isinstance(presentation_content, str):
+        try:
+            presentation_content = json.loads(presentation_content)
+        except json.JSONDecodeError:
+            logger.error("Presentation content is not valid JSON.")
+            raise ValueError("Presentation content must be a valid JSON object or dictionary.")
+
+    # Ensure presentation_content has the correct structure
+    if not isinstance(presentation_content, dict) or "slides" not in presentation_content:
+        logger.error("Presentation content does not have the required 'slides' key.")
+        raise ValueError("Presentation content must contain a 'slides' key with slide data.")
+
+    # Process each slide
     for slide in presentation_content["slides"]:
         count += 1
         try:
-            if slide["type"] == "introduction":
-                logger.info(f"Generating introduction slide: {slide['title']}")
-                slide_renderer.generate_intro_slide(slide["title"], slide["subtitle"])
+            if slide.get("type") == "introduction":
+                logger.info(f"Generating introduction slide: {slide.get('title', 'No Title')}")
+                slide_renderer.generate_intro_slide(slide.get("title", ""), slide.get("subtitle", ""))
                 filename = f"{output_dir}/intro_slide.png"
                 slide_renderer.render_slide(filename)
                 slide_file_paths.append(filename)
-            elif slide["type"] == "main":
-                logger.info(f"Generating main slide {count}: {slide['title']}")
-                slide_renderer.generate_main_slide(slide["title"], slide["bullet_points"],
-                                                   image_file_paths.pop(0), random.choice(main_slide_template_options))
+            elif slide.get("type") == "main":
+                logger.info(f"Generating main slide {count}: {slide.get('title', 'No Title')}")
+                image_path = image_file_paths.pop(0) if image_file_paths else "default_image.png"
+                if not os.path.exists(image_path):
+                    logger.warning(f"Image file {image_path} not found. Using placeholder image.")
+                    create_placeholder_slide(image_path)
+                slide_renderer.generate_main_slide(
+                    slide.get("title", ""),
+                    slide.get("bullet_points", []),
+                    image_path,
+                    random.choice(main_slide_template_options)
+                )
                 filename = f"{output_dir}/main_slide_{count}.png"
                 slide_renderer.render_slide(filename)
                 slide_file_paths.append(filename)
-            elif slide["type"] == "conclusion":
-                logger.info(f"Generating conclusion slide: {slide['title']}")
-                slide_renderer.generate_conclusion_slide(slide["title"], slide["subtitle"])
+            elif slide.get("type") == "conclusion":
+                logger.info(f"Generating conclusion slide: {slide.get('title', 'No Title')}")
+                slide_renderer.generate_conclusion_slide(slide.get("title", ""), slide.get("subtitle", ""))
                 filename = f"{output_dir}/conclusion_slide.png"
                 slide_renderer.render_slide(filename)
                 slide_file_paths.append(filename)
+            else:
+                logger.warning(f"Unknown slide type: {slide.get('type')}. Skipping...")
         except Exception as slide_error:
             logger.error(f"Error generating slide {count}: {slide_error}")
+            placeholder_path = f"{output_dir}/error_slide_{count}.png"
+            create_placeholder_slide(placeholder_path)
+            slide_file_paths.append(placeholder_path)
 
     logger.info(f"All slides generated. Total slides: {len(slide_file_paths)}")
     return slide_file_paths

@@ -1,5 +1,17 @@
 from html2image import Html2Image
 import os
+import logging
+
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("slide_renderer.log"),
+        logging.StreamHandler()
+    ]
+)
 
 class SlideRenderer:
     def __init__(self, templates_dir="templates"):
@@ -8,6 +20,7 @@ class SlideRenderer:
         """
         self.templates_dir = templates_dir
         self.html = ""
+        logging.debug(f"Initialized SlideRenderer with templates_dir: {templates_dir}")
 
     def load_template(self, template_name):
         """
@@ -16,9 +29,12 @@ class SlideRenderer:
         :return: The template as a string.
         """
         file_path = os.path.join(self.templates_dir, template_name)
+        logging.debug(f"Loading template: {file_path}")
         if not os.path.exists(file_path):
+            logging.error(f"Template {template_name} not found in {self.templates_dir}")
             raise FileNotFoundError(f"Template {template_name} not found in {self.templates_dir}")
         with open(file_path, "r", encoding="utf-8") as file:
+            logging.info(f"Template {template_name} loaded successfully")
             return file.read()
 
     def generate_intro_slide(self, title, subtitle, template_name="intro.html"):
@@ -28,6 +44,7 @@ class SlideRenderer:
         :param subtitle: The subtitle of the slide.
         :param template_name: The template name for the intro slide.
         """
+        logging.info(f"Generating intro slide with title: {title} and subtitle: {subtitle}")
         template = self.load_template(template_name)
         self.html = template.replace("{{ title }}", title).replace("{{ subtitle }}", subtitle)
 
@@ -39,6 +56,7 @@ class SlideRenderer:
         :param image_url: The URL or path of the image to display (optional).
         :param template_name: The template name for the main slide.
         """
+        logging.info(f"Generating main slide with title: {title}, bullet points: {bullet_points}, and image: {image_url}")
         template = self.load_template(template_name)
         bullet_points_html = ""
         if bullet_points:
@@ -54,6 +72,7 @@ class SlideRenderer:
         :param call_to_action: The call-to-action text for the slide.
         :param template_name: The template name for the conclusion slide.
         """
+        logging.info(f"Generating conclusion slide with thank_you: {thank_you} and call_to_action: {call_to_action}")
         template = self.load_template(template_name)
         self.html = template.replace("{{ thank_you }}", thank_you).replace("{{ call_to_action }}", call_to_action)
 
@@ -63,8 +82,21 @@ class SlideRenderer:
         :param output_path: Path to save the rendered image.
         :param size: Tuple specifying the width and height of the rendered image.
         """
-        hti = Html2Image()
-        hti.screenshot(html_str=self.html, save_as=output_path, size=size)
+        logging.info(f"Rendering slide to image: {output_path} with size: {size}")
+
+        # Ensure the directory exists
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+            logging.debug(f"Created output directory: {output_dir}")
+
+        hti = Html2Image(output_path=output_dir)
+        try:
+            hti.screenshot(html_str=self.html, save_as=os.path.basename(output_path), size=size)
+            logging.info(f"Slide rendered successfully to {output_path}")
+        except Exception as e:
+            logging.error(f"Error rendering slide: {e}")
+            raise
 
 if __name__ == "__main__":
     # Example usage
