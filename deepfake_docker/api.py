@@ -1,4 +1,4 @@
-from bottle import Bottle, request, response
+from bottle import Bottle, request, response, static_file
 import subprocess
 from pathlib import Path
 import logging
@@ -73,11 +73,7 @@ def generate_deepfake():
     start_time = datetime.datetime.now()
 
     try:
-        result = subprocess.run(
-            command,
-           # check=True,
-           # text=True
-        )
+        result = subprocess.run(command)
         end_time = datetime.datetime.now()
         duration = (end_time - start_time).total_seconds()
         logger.info(f"Wav2Lip inference completed in {duration} seconds")
@@ -102,7 +98,7 @@ def generate_deepfake():
     # Serve the output video file
     try:
         logger.info(f"Sending output video {output_path} to client")
-        return response.file(str(output_path), download=True)
+        return static_file(filename=output_path.name, root=str(output_path.parent), download=True)
     except Exception as e:
         logger.exception(f"Failed to send output video: {e}")
         response.status = 500
