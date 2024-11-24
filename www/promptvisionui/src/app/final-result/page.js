@@ -18,9 +18,7 @@ const FinalResultsPage = () => {
    const fileInputRef = useRef(null);
    const audioInputRef = useRef(null);
 
-   const handleGoBack = () => {
-     router.back();
-   };
+  
  
    // Trigger the hidden file input when button is clicked
    const handleImageUploadClick = () => {
@@ -40,7 +38,9 @@ const FinalResultsPage = () => {
     const files = event.target.files;
     console.log("Selected audio files:", files); // Do something with the audio files if needed
   };
-
+  const handleGoBack = () => {
+    router.push('/generate-video'); // Navigate to the '/generate-video' route
+  };
  
 
   return (
@@ -121,6 +121,12 @@ const FinalResultsPage = () => {
           </button>
           <button className={styles.downloadButton}>
             <span>Download</span>
+          </button>
+          <button
+            className={styles.downloadButton}
+            onClick={handleGoBack} // Attach the go-back handler
+          >
+            <span>Go Back</span>
           </button>
         </div>
       </div>
