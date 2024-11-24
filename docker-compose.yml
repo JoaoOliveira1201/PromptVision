@@ -61,6 +61,18 @@ services:
     networks:
       - my_network
 
+  text_to_image:
+    <<: *common
+    build:
+      context: ./text_to_image
+      dockerfile: Dockerfile
+    image: text_to_image_image:latest
+    container_name: text_to_image_container
+    ports:
+      - "7050:7050"
+    networks:
+      - my_network
+
 networks:
   my_network:
     driver: bridge

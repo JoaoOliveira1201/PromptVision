@@ -15,7 +15,7 @@ COPY . .
 
 
 # Expose the port on which the app runs
-EXPOSE 8000
+EXPOSE 7050
 
 # Set the command to run the application
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "7050"]
