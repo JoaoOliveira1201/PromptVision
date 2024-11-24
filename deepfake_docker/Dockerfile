@@ -35,6 +35,8 @@ COPY . /app
 
 RUN mkdir /app/characters
 RUN chmod -R 777 /app/characters
+RUN cp kim_wexler.mp4 /app/characters/kim_wexler.mp4
+RUN cp walter_white.mp4 /app/characters/walter_white.mp4
 
 # Ensure necessary directories exist
 RUN mkdir -p /app/uploads /app/outputs /app/characters /app/temp

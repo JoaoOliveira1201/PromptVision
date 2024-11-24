@@ -28,31 +28,29 @@ CHARACTERS_DIR.mkdir(parents=True, exist_ok=True)
 def generate_deepfake():
     logger.info("Received request to /generate-deepfake")
 
-    video = request.files.get('video')
+    # Get the 'character' parameter from the request
+    character_name = request.forms.get('character')
     audio = request.files.get('audio')
 
-    # Check if both files are provided
-    if not video or not audio:
-        logger.warning("Missing video or audio file in the request")
+    # Check if both character and audio are provided
+    if not character_name or not audio:
+        logger.warning("Missing character or audio in the request")
         response.status = 400
-        return {"error": "Video and audio files are required"}
+        return {"error": "Character and audio files are required"}
 
-    # Log the filenames
-    logger.debug(f"Video filename: {video.filename}")
+    logger.debug(f"Character selected: {character_name}")
     logger.debug(f"Audio filename: {audio.filename}")
 
-    # Save uploaded files temporarily
-    video_path = UPLOAD_DIR / video.filename
-    audio_path = UPLOAD_DIR / audio.filename
-    output_path = OUTPUT_DIR / f"deepfake_{video.filename}"
+    # Validate that the character video exists
+    character_video_path = CHARACTERS_DIR / character_name
+    if not character_video_path.exists() or not character_video_path.is_file():
+        logger.warning(f"Character video '{character_name}' does not exist")
+        response.status = 400
+        return {"error": f"Character '{character_name}' does not exist"}
 
-    try:
-        video.save(str(video_path))
-        logger.info(f"Saved video file to {video_path}")
-    except Exception as e:
-        logger.error(f"Failed to save video file: {e}")
-        response.status = 500
-        return {"error": "Failed to save video file"}
+    # Save the uploaded audio file temporarily
+    audio_path = UPLOAD_DIR / audio.filename
+    output_path = OUTPUT_DIR / f"deepfake_{audio.filename}_{character_name}"
 
     try:
         audio.save(str(audio_path))
@@ -66,7 +64,7 @@ def generate_deepfake():
     command = [
         "python3", WAV2LIP_SCRIPT_PATH,
         "--checkpoint_path", WAV2LIP_MODEL_PATH,
-        "--face", str(video_path),
+        "--face", str(character_video_path),
         "--audio", str(audio_path),
         "--outfile", str(output_path)
     ]
@@ -81,10 +79,11 @@ def generate_deepfake():
         logger.info(f"Wav2Lip inference completed in {duration} seconds")
         logger.debug(f"Subprocess stdout: {result.stdout}")
         logger.debug(f"Subprocess stderr: {result.stderr}")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Wav2Lip inference failed: {e.stderr}")
-        response.status = 500
-        return {"error": f"Wav2Lip inference failed: {e.stderr}"}
+
+        if result.returncode != 0:
+            logger.error(f"Wav2Lip inference failed with return code {result.returncode}")
+            response.status = 500
+            return {"error": f"Wav2Lip inference failed: {result.stderr}"}
     except Exception as e:
         logger.exception(f"Unexpected error during Wav2Lip inference: {e}")
         response.status = 500
@@ -105,7 +104,6 @@ def generate_deepfake():
         logger.exception(f"Failed to send output video: {e}")
         response.status = 500
         return {"error": "Failed to send the generated video"}
-
 
 @app.post('/upload-character')
 def upload_character():
