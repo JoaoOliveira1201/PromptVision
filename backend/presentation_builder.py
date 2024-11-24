@@ -42,8 +42,7 @@ class PresentationBuilder:
             # Set audio
             slide = slide.set_audio(video_clip.audio)
         else:
-            # If no video, set a default duration
-            slide = slide.set_duration(5)  # Default duration in seconds
+            slide = slide.set_duration(5)
 
         self.slides.append(slide)
 
@@ -57,17 +56,15 @@ class PresentationBuilder:
         if not self.slides:
             raise ValueError("No slides have been added to the presentation.")
 
-        # Concatenate all slides
         final_clip = concatenate_videoclips(self.slides, method="compose")
 
-        # Write the final video file
         final_clip.write_videofile(
             output_path,
             fps=fps,
-            codec='libx264',  # Video codec
-            audio_codec='aac',  # Audio codec
-            temp_audiofile='temp-audio.m4a',  # Temporary audio file
-            remove_temp=True  # Remove temporary files after completion
+            codec='libx264',
+            audio_codec='aac',
+            temp_audiofile='temp-audio.m4a',
+            remove_temp=True
         )
 
 if __name__ == "__main__":
@@ -78,7 +75,9 @@ if __name__ == "__main__":
     )
 
     # Add slides with optional video overlays
-    presentation.add_slide("slide.png", "videos/john-china.mp4")
+    presentation.add_slide("intro_slide.png", "videos/john-china.mp4")
+    presentation.add_slide("main_slide.png", "videos/john-china.mp4")
+    presentation.add_slide("conclusion_slide.png")
 
     # Produce the final presentation video
     presentation.produce_presentation("videos/out.mp4", fps=24)

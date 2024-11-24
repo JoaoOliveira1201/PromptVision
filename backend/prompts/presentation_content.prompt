@@ -1,0 +1,89 @@
+Generate a structured presentation in JSON format on the topic: "[Your Topic]". The presentation should include:
+
+- **Introduction Slide**: Contains a title, subtitle, and an introduction script.
+- **Main Content Slides**: Each slide should have a title, bullet points, and a script.
+- **Conclusion Slide**: Contains a title, subtitle, and a conclusion script.
+
+**Parameters:**
+
+- **Duration**: [Desired Duration] minutes
+- **Detail Level**: [Beginner/Intermediate/Advanced]
+- **Impersonation**: [Well-Known Personality]
+
+Please format the response as follows:
+
+{
+  "parameters": {
+    "duration": "[Desired Duration] minutes",
+    "detail_level": "[Beginner/Intermediate/Advanced]",
+    "impersonation": "[Well-Known Personality]"
+  },
+  "slides": [
+    {
+      "type": "introduction",
+      "title": "[Introduction Title]",
+      "subtitle": "[Introduction Subtitle]",
+      "script": "[Introduction Script]"
+    },
+    {
+      "type": "main",
+      "title": "[Main Slide Title]",
+      "bullet_points": [
+        "[Bullet Point 1]",
+        "[Bullet Point 2]",
+        "[Bullet Point 3]"
+      ],
+      "script": "[Main Slide Script]"
+    },
+    {
+      "type": "conclusion",
+      "title": "[Conclusion Title]",
+      "subtitle": "[Conclusion Subtitle]",
+      "script": "[Conclusion Script]"
+    }
+  ]
+}
+
+**Example:**
+
+{
+  "parameters": {
+    "duration": "15 minutes",
+    "detail_level": "Intermediate",
+    "impersonation": "David Attenborough"
+  },
+  "slides": [
+    {
+      "type": "introduction",
+      "title": "The Wonders of the Ocean",
+      "subtitle": "Exploring Marine Biodiversity",
+      "script": "Ladies and gentlemen, join me as we embark on a journey through the vast and mysterious oceans, uncovering the rich tapestry of life that thrives beneath the waves."
+    },
+    {
+      "type": "main",
+      "title": "Coral Reefs: The Rainforests of the Sea",
+      "bullet_points": [
+        "Diverse marine ecosystems",
+        "Vital for coastal protection",
+        "Threatened by climate change"
+      ],
+      "script": "Coral reefs, often referred to as the rainforests of the sea, harbor an astonishing diversity of marine life. They play a crucial role in protecting our coastlines and are currently facing unprecedented threats from climate change."
+    },
+    {
+      "type": "main",
+      "title": "Deep Sea Mysteries",
+      "bullet_points": [
+        "Home to unique species",
+        "Extreme environmental conditions",
+        "Largely unexplored territories"
+      ],
+      "script": "The deep sea remains one of the last frontiers on our planet, home to creatures adapted to extreme conditions. Despite technological advancements, much of this realm remains unexplored, holding secrets yet to be discovered."
+    },
+    {
+      "type": "conclusion",
+      "title": "Preserving Our Blue Planet",
+      "subtitle": "A Call to Action",
+      "script": "As we marvel at the wonders of the ocean, it is imperative that we take action to preserve these ecosystems for future generations. Our collective efforts can ensure the continued vitality of our blue planet."
+    }
+  ]
+}

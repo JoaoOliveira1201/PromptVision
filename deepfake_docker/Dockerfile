@@ -33,7 +33,6 @@ RUN pip3 install -r requirements.txt
 
 # Copy the rest of the app files into the container
 COPY . /app
-
 # Ensure necessary directories exist
 RUN mkdir -p /app/uploads /app/outputs /app/characters /app/temp
 

@@ -1,3 +1,4 @@
+"""
 import tempfile
 import os
 import subprocess
@@ -16,7 +17,6 @@ MODELS_LOCATION = {
     'default_man_en': '/app/voices/en_GB/en_GB-northern_english_male-medium.onnx',
     'default_man_pt': '/app/voices/pt_PT/pt_PT-tugão-medium.onnx'
 }
-
 
 @app.route('/synthesize', method=['POST'])
 def synthesize_endpoint():
@@ -214,3 +214,161 @@ def upload_audio():
         logger.error(f"Error saving file: {str(e)}")
         response.status = 500
         return {'error': str(e)}
+"""
+
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from pathlib import Path
+import tempfile
+import os
+import subprocess
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
+app = FastAPI(
+    title="Speech Synthesis API",
+    description="API for speech synthesis using Piper models",
+    version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
+MODELS_LOCATION = {
+    "default_man_en": "/app/voices/en_GB/en_GB-northern_english_male-medium.onnx",
+    "default_man_pt": "/app/voices/pt_PT/pt_PT-tugão-medium.onnx",
+}
+
+
+@app.post("/synthesize")
+async def synthesize(
+    text: str = Form(...),
+    output_file_name: str = Form("placeholderAudio"),
+    model_character: str = Form("default_man_en"),
+    output_format: str = Form("wav"),
+    use_cuda: bool = Form(True),
+):
+    """
+    Synthesize speech from text using a specified model.
+    """
+    logger.info(f"Received request to synthesize speech with text: {text}")
+    model_path = MODELS_LOCATION.get(model_character)
+
+    if not model_path:
+        logger.error(f"Model {model_character} not found.")
+        raise HTTPException(status_code=400, detail=f"Model {model_character} not found.")
+
+    try:
+        audio_data = await perform_synthesis(
+            text, model_path, output_file_name, output_format.lower(), use_cuda, model_character == "default_man_pt"
+        )
+        logger.info("Speech synthesis completed successfully.")
+
+        file_extension = output_format.lower()
+        response_path = f"{output_file_name}.{file_extension}"
+        with open(response_path, "wb") as f:
+            f.write(audio_data)
+
+        return FileResponse(response_path, media_type=f"audio/{file_extension}", filename=response_path)
+
+    except Exception as e:
+        logger.error(f"Error during synthesis: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def perform_synthesis(
+    text, model_path, output_file_name, output_format, use_cuda, is_portuguese
+):
+    temp_files = []
+    try:
+        logger.debug("Creating temporary WAV file.")
+        tmp_wav_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+        temp_files.append(tmp_wav_file.name)
+
+        cmd = [
+            "python3",
+            "-m",
+            "piper",
+            "--model",
+            model_path,
+            "--output_file",
+            tmp_wav_file.name,
+        ]
+        if use_cuda:
+            cmd.append("--cuda")
+
+        subprocess.run(cmd, input=text.encode("utf-8"), check=True)
+
+        input_file = tmp_wav_file.name
+
+        if is_portuguese:
+            tmp_slow_wav = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+            temp_files.append(tmp_slow_wav.name)
+
+            slow_cmd = ["ffmpeg", "-y", "-i", input_file, "-filter:a", "atempo=0.9", tmp_slow_wav.name]
+            subprocess.run(slow_cmd, check=True)
+            input_file = tmp_slow_wav.name
+
+        if output_format == "mp3":
+            tmp_mp3_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+            temp_files.append(tmp_mp3_file.name)
+
+            ffmpeg_cmd = ["ffmpeg", "-y", "-i", input_file, "-f", "mp3", tmp_mp3_file.name]
+            subprocess.run(ffmpeg_cmd, check=True)
+            final_file = tmp_mp3_file.name
+        else:
+            final_file = input_file
+
+        with open(final_file, "rb") as f:
+            audio_data = f.read()
+
+        return audio_data
+
+    except subprocess.CalledProcessError as e:
+        error_message = e.stderr.decode("utf-8") if e.stderr else str(e)
+        logger.error(f"Subprocess error: {error_message}")
+        raise RuntimeError(error_message)
+    finally:
+        for temp_file in temp_files:
+            if os.path.exists(temp_file):
+                os.unlink(temp_file)
+
+
+@app.post("/upload")
+async def upload_audio(file: UploadFile = File(...)):
+    """
+    Upload an audio file.
+    """
+    logger.info("Received request to upload an audio file.")
+    save_dir = "/app/characters"
+
+    os.makedirs(save_dir, exist_ok=True)
+    file_path = os.path.join(save_dir, file.filename)
+
+    try:
+        with open(file_path, "wb") as f:
+            content = await file.read()
+            f.write(content)
+
+        logger.info(f"File saved to {file_path}")
+        return {"status": "File uploaded successfully", "file_path": file_path}
+    except Exception as e:
+        logger.error(f"Error saving file: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/health")
+async def health_check():
+    """
+    Health check endpoint.
+    """
+    return {"status": "healthy"}
