@@ -160,11 +160,10 @@ const AddYourVoicePage = () => {
       </div>
 
       <div className={styles.rightPanel}>
-        <h2 className={styles.rightTitle}>Add your voice</h2>
+        <h2 className={styles.rightTitle}>Add your face</h2>
         <p className={styles.rightDescription}>
-          To add your voice please select the preferred language and read the text carefully. 
-          The better you read the text, the better you'll sound! You can also give a name and an icon! 
-          P.S.: It'll take a while until your voice is available. Please be patient.
+          To add your face please record a video with your face well iluminated.
+          P.S.: It'll take a while until your face is available. Please be patient.
         </p>
         <button className={styles.goBackButton} onClick={handleGoBack}>Go back</button>
         <img 
