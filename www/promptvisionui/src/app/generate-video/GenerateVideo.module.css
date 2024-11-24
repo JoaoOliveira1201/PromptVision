@@ -154,7 +154,11 @@ background-color: #7d7d7d;
     display: flex;
     gap: 10px;
   }
-
+  .duration
+  {
+    font-family: 'Manjari', sans-serif;
+    font-size: 1rem;
+  }
   
   .levelButton
   {
@@ -227,6 +231,14 @@ background-color: #7d7d7d;
     color: white;
     border: 1px solid #ff6a00;
   }
+  .numberInput {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100px;
+  }
+  
   
   .flag {
     width: 20px;

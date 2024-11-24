@@ -22,10 +22,15 @@ const FinalResultsPage = () => {
  
    // Trigger the hidden file input when button is clicked
    const handleImageUploadClick = () => {
-     fileInputRef.current.click();
-   };
-   const handleAudioUploadClick = () => {
-    audioInputRef.current.click();
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleAudioUploadClick = () => {
+    if (audioInputRef.current) {
+      audioInputRef.current.click();
+    }
   };
  
    // Handle file selection (optional)
