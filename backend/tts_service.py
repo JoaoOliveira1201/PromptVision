@@ -1,6 +1,7 @@
 from typing import List
 import httpx
 import logging
+import os
 
 TTS_SERVICE_URL = "http://text_to_speech_container:8080/synthesize"
 
@@ -10,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 async def generate_audio_scripts(script: List[str]) -> List[str]:
     audio_file_paths = []
+    os.makedirs("audio", exist_ok=True)
 
     for idx, text in enumerate(script):
         logger.info(f"Converting text to speech for slide {idx + 1}")
@@ -22,7 +24,7 @@ async def generate_audio_scripts(script: List[str]) -> List[str]:
             "use_cuda": "false"
         }
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=None) as client:
             response = await client.post(TTS_SERVICE_URL, data=payload)  # Use 'data' for form data
             response.raise_for_status()
 

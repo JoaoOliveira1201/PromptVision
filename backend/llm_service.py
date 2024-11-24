@@ -106,6 +106,9 @@ if __name__ == "__main__":
         detail_level = "Beginner"
         impersonation = "David Attenborough"
 
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        logging.info(f"Output directory ensured: {OUTPUT_DIR}")
+
         try:
             logging.info("Starting the main async function")
             result = await generate_presentation_content(topic, duration, detail_level, impersonation)

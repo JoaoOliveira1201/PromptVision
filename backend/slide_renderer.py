@@ -48,22 +48,33 @@ class SlideRenderer:
         template = self.load_template(template_name)
         self.html = template.replace("{{ title }}", title).replace("{{ subtitle }}", subtitle)
 
-    def generate_main_slide(self, title, bullet_points=None, image_url="", template_name="main1.html"):
+    def generate_main_slide(self, title, bullet_points=None, image_url="", template_name="slide_1.html"):
         """
         Generate a main presentation slide with a title, bullet points, and an image.
         :param title: The title of the slide.
-        :param bullet_points: A list of bullet points (optional).
-        :param image_url: The URL or path of the image to display (optional).
+        :param bullet_points: A list of bullet points.
+        :param image_url: The URL or path of the image to display.
         :param template_name: The template name for the main slide.
         """
-        logging.info(f"Generating main slide with title: {title}, bullet points: {bullet_points}, and image: {image_url}")
+        logging.info(f"Generating main slide: Title - {title}, Bullet Points - {bullet_points}, Image Path - {image_url}")
+
+        # Load the HTML template
         template = self.load_template(template_name)
-        bullet_points_html = ""
+
+        # Generate HTML for bullet points
         if bullet_points:
-            bullet_points_html = "".join(f"<li>{point}</li>" for point in bullet_points)
-        self.html = template.replace("{{ title }}", title)
+            bullet_points_html = "".join(f"<li>{point}</li>" for point in bullet_points if point)
+        else:
+            bullet_points_html = "<li>No points available</li>"
+
+        # Replace placeholders in the template
+        self.html = template.replace("{{ title }}", title or "Untitled Slide")
         self.html = self.html.replace("{{ bullet_points }}", bullet_points_html)
-        self.html = self.html.replace("{{ image_url }}", image_url)
+        self.html = self.html.replace("{{ image_url }}", image_url or "placeholder.jpg")
+
+        # Log the final HTML for debugging
+        logging.debug(f"Generated HTML for main slide:\n{self.html}")
+
 
     def generate_conclusion_slide(self, thank_you, call_to_action, template_name="conclusion.html"):
         """
@@ -90,7 +101,11 @@ class SlideRenderer:
             os.makedirs(output_dir)
             logging.debug(f"Created output directory: {output_dir}")
 
-        hti = Html2Image(output_path=output_dir)
+        hti = Html2Image(
+            output_path=output_dir,
+            browser_executable="/usr/bin/chromium",  # Update path if necessary
+            custom_flags=["--headless", "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
+        )
         try:
             hti.screenshot(html_str=self.html, save_as=os.path.basename(output_path), size=size)
             logging.info(f"Slide rendered successfully to {output_path}")

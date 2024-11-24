@@ -68,7 +68,8 @@ async def generate_presentation(
 
         logger.info("Generating presentation content using LLM...")
         presentation_content = await generate_presentation_content(text_content, duration, detail_level, character)
-        logger.info(presentation_content)
+        presentation_content = json.loads(presentation_content)
+        logger.info("Parsed presentation content: %s", presentation_content)
 
         logger.info("Generating images using Stable Diffusion...")
         tittles = extract_tittles_from_presentation_content(presentation_content)
@@ -83,6 +84,7 @@ async def generate_presentation(
 
         logger.info("Generating slides...")
         slide_file_paths = generate_slides(presentation_content, image_file_paths, "output")
+        logger.info(f"Slide file paths: {slide_file_paths}")
 
         logger.info("Building final presentation...")
         final_video_path = build_final_presentation(slide_file_paths, deepfake_file_paths, "output")
@@ -105,6 +107,73 @@ def create_placeholder_slide(filename):
 def generate_slides(presentation_content, image_file_paths, output_dir) -> List[str]:
     import logging
     logger = logging.getLogger(__name__)
+    logger.info("Generating individual slides...")
+    slide_renderer = SlideRenderer()  # Ensure slide_renderer is defined here
+    slide_file_paths = []
+
+    # Ensure the output directory exists
+    output_dir = os.path.abspath(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+
+    for count, slide in enumerate(presentation_content["slides"], start=1):
+        try:
+            # Log the entire slide object for debugging
+            logger.info(f"Processing slide {count}: {slide}")
+
+            filename = os.path.join(output_dir, f"slide_{count}.png")
+
+            if slide.get("type") == "introduction":
+                logger.info(f"Generating introduction slide: Title - {slide.get('title', '')}, Subtitle - {slide.get('subtitle', '')}")
+                slide_renderer.generate_intro_slide(slide.get("title", ""), slide.get("subtitle", ""))
+
+            elif slide.get("type") == "main":
+                image_path = image_file_paths.pop(0) if image_file_paths else "default_image.png"
+
+                if not os.path.exists(image_path):
+                    logger.warning(f"Image file {image_path} not found. Using placeholder.")
+                    create_placeholder_slide(image_path)
+
+                logger.info(f"Generating main slide: Title - {slide.get('title', '')}, Bullet Points - {slide.get('bullet_points', [])}, Image Path - {image_path}")
+                slide_renderer.generate_main_slide(
+                    slide.get("title", ""),
+                    slide.get("bullet_points", []),
+                    image_path
+                )
+
+            elif slide.get("type") == "conclusion":
+                logger.info(f"Generating conclusion slide: Title - {slide.get('title', '')}, Subtitle - {slide.get('subtitle', '')}")
+                slide_renderer.generate_conclusion_slide(slide.get("title", ""), slide.get("subtitle", ""))
+
+            else:
+                logger.warning(f"Unknown slide type: {slide.get('type')}. Skipping...")
+                continue
+
+            # Render the slide to an image
+            slide_renderer.render_slide(filename)
+
+            # Check if the slide was successfully created
+            if not os.path.exists(filename):
+                logger.error(f"Slide not created: {filename}")
+                raise FileNotFoundError(f"Slide creation failed: {filename}")
+
+            # Append successfully created slide path
+            slide_file_paths.append(filename)
+            logger.info(f"Slide {count} successfully created: {filename}")
+
+        except Exception as e:
+            # Log error and create a placeholder slide for failed generation
+            logger.error(f"Error generating slide {count}: {e}")
+            placeholder_path = os.path.join(output_dir, f"error_slide_{count}.png")
+            create_placeholder_slide(placeholder_path)
+            slide_file_paths.append(placeholder_path)
+            logger.info(f"Placeholder slide created for slide {count}: {placeholder_path}")
+
+    logger.info(f"All slides generated: {slide_file_paths}")
+    return slide_file_paths
+
+    import logging
+    
+    logger = logging.getLogger(__name__)
     logging.basicConfig(level=logging.INFO)
 
     logger.info("Generating individual slides...")
@@ -114,7 +183,9 @@ def generate_slides(presentation_content, image_file_paths, output_dir) -> List[
     count = 0
 
     # Ensure the output directory exists
+    output_dir = os.path.abspath(output_dir)
     os.makedirs(output_dir, exist_ok=True)
+    
 
     # Parse presentation_content if it's a string
     if isinstance(presentation_content, str):
@@ -138,6 +209,11 @@ def generate_slides(presentation_content, image_file_paths, output_dir) -> List[
                 slide_renderer.generate_intro_slide(slide.get("title", ""), slide.get("subtitle", ""))
                 filename = f"{output_dir}/intro_slide.png"
                 slide_renderer.render_slide(filename)
+                if os.path.exists(filename):
+                    logger.info(f"File successfully created: {filename}")
+                else:
+                    logger.error(f"File creation failed: {filename}")
+                    raise FileNotFoundError(f"Failed to create slide file: {filename}")
                 slide_file_paths.append(filename)
             elif slide.get("type") == "main":
                 logger.info(f"Generating main slide {count}: {slide.get('title', 'No Title')}")
@@ -153,12 +229,22 @@ def generate_slides(presentation_content, image_file_paths, output_dir) -> List[
                 )
                 filename = f"{output_dir}/main_slide_{count}.png"
                 slide_renderer.render_slide(filename)
+                if os.path.exists(filename):
+                    logger.info(f"File successfully created: {filename}")
+                else:
+                    logger.error(f"File creation failed: {filename}")
+                    raise FileNotFoundError(f"Failed to create slide file: {filename}")
                 slide_file_paths.append(filename)
             elif slide.get("type") == "conclusion":
                 logger.info(f"Generating conclusion slide: {slide.get('title', 'No Title')}")
                 slide_renderer.generate_conclusion_slide(slide.get("title", ""), slide.get("subtitle", ""))
                 filename = f"{output_dir}/conclusion_slide.png"
                 slide_renderer.render_slide(filename)
+                if os.path.exists(filename):
+                    logger.info(f"File successfully created: {filename}")
+                else:
+                    logger.error(f"File creation failed: {filename}")
+                    raise FileNotFoundError(f"Failed to create slide file: {filename}")
                 slide_file_paths.append(filename)
             else:
                 logger.warning(f"Unknown slide type: {slide.get('type')}. Skipping...")
@@ -174,10 +260,22 @@ def generate_slides(presentation_content, image_file_paths, output_dir) -> List[
 
 def build_final_presentation(slides, deepfake_videos, output_dir) -> str:
     logger.info("Assembling final presentation video...")
+
+    output_dir = os.path.abspath(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
     presentation_builder = PresentationBuilder(
         video_position=("right", "bottom"),
         video_size=(400, None)
     )
+    
+
+    for slide, video in zip(slides, deepfake_videos):
+        if not os.path.exists(slide):
+            logger.error(f"Slide file missing: {slide}")
+            raise FileNotFoundError(f"Slide file missing: {slide}")
+        if not os.path.exists(video):
+            logger.error(f"Video file missing: {video}")
+            raise FileNotFoundError(f"Video file missing: {video}")
 
     for slide, video in zip(slides, deepfake_videos):
         logger.info(f"Adding slide {slide} with video {video} to presentation.")
