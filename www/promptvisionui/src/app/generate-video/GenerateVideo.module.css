@@ -215,6 +215,25 @@ background-color: #7d7d7d;
     background-color: #333;
     color: #fff;
   }
+
+  .selected {
+    background-color: #ff6a00;
+    color: white;
+    border: 1px solid #ff6a00;
+  }
+
+  .active {
+    background-color: #ff6a00;
+    color: white;
+    border: 1px solid #ff6a00;
+  }
+  
+  .flag {
+    width: 20px;
+    height: 20px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
   
   .generateButton {
     width: 20%;

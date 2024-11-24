@@ -10,6 +10,8 @@ const GenerateVideo = () => {
   const router = useRouter();
 
   const [isChecked, setIsChecked] = useState(false); // State to control the checkbox
+  const [selectedDetailLevel, setSelectedDetailLevel] = useState(null);
+  const [activeLanguage, setActiveLanguage] = useState('English');
 
   const handleCheckboxChange = () => {
     setIsChecked(!isChecked); // Toggle checkbox state
@@ -22,6 +24,15 @@ const GenerateVideo = () => {
   const handleGenerate = () => {
     router.push('/final-result');
   };
+
+  const handleDetailLevelClick = (level) => {
+    setSelectedDetailLevel(level); // Set the selected detail level
+  };
+
+  const handleLanguageSelect = (language) => {
+    setActiveLanguage(language); // Set the active language
+  };
+
   return (
     <div className={styles.container}>
      
@@ -29,7 +40,7 @@ const GenerateVideo = () => {
       <div className={styles.leftPanel}>
         <h1 className={styles.title}>Prompt Vision</h1>
         <p className={styles.description}>
-          Add your voice to become one of the teachers voices
+          Add your face
         </p>
         <button className={styles.learnMoreButton} onClick={handleLearnMoreClick}>Learn more</button>
         <img 
@@ -50,15 +61,40 @@ const GenerateVideo = () => {
 
         <h2 className={styles.detailLevelTitle}>Detail level</h2>
         <div className={styles.detailLevelOptions}>
-          <button className={styles.levelButton}>Basic</button>
-          <button className={styles.levelButton }>Intermediate</button>
-          <button className={styles.levelButton}>World class</button>
-        </div>
+            <button 
+              className={`${styles.levelButton} ${selectedDetailLevel === 'Basic' ? styles.selected : ''}`}
+              onClick={() => handleDetailLevelClick('Basic')}
+            >
+              Basic
+            </button>
+            <button 
+              className={`${styles.levelButton} ${selectedDetailLevel === 'Intermediate' ? styles.selected : ''}`}
+              onClick={() => handleDetailLevelClick('Intermediate')}
+            >
+              Intermediate
+            </button>
+            <button 
+              className={`${styles.levelButton} ${selectedDetailLevel === 'World class' ? styles.selected : ''}`}
+              onClick={() => handleDetailLevelClick('World class')}
+            >
+              World class
+            </button>
+          </div>
 
         <h2 className={styles.voiceTitle}>Voice</h2>
         <div className={styles.languageOptions}>
-          <button className={styles.languageButton}>English 🇬🇧</button>
-          <button className={styles.languageButton}>Português 🇵🇹</button>
+        <button 
+              className={`${styles.languageButton} ${activeLanguage === 'English' ? styles.active : ''}`}
+              onClick={() => handleLanguageSelect('English')}
+            >
+              English <img src="/ENG.png" alt="GB" className={styles.flag} />
+            </button>
+            <button 
+              className={`${styles.languageButton} ${activeLanguage === 'Português' ? styles.active : ''}`}
+              onClick={() => handleLanguageSelect('Português')}
+            >
+              Português <img src="/PT.png" alt="PT" className={styles.flag} />
+            </button>
         </div>
 
         <div className={styles.options}>
