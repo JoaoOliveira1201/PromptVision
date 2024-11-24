@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import List
 import logging
 
-DEEPFAKE_SERVICE_URL = "http://37.189.137.45:7000/generate"
+DEEPFAKE_SERVICE_URL = "http://37.189.137.45:7000"
 
 logging.basicConfig(level=logging.INFO)
 
@@ -40,3 +40,9 @@ async def generate_deepfake_videos(character: str, audio_file_paths: List[str]) 
                 logging.error(f"An error occurred while generating deepfake for {audio_filename}: {e}")
 
     return generated_video_paths
+
+if __name__ == "__main__":
+    import asyncio
+
+    audio_file_paths = ["do_not_redeem_the_card.mp3"]
+    asyncio.run(generate_deepfake_videos("walter_white", audio_file_paths))

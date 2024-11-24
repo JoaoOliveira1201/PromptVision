@@ -1,4 +1,7 @@
+import json
 import logging
+from typing import Dict
+
 import httpx
 
 LLM_SERVICE_URL = "http://llama_container:9000/chat"
@@ -57,7 +60,7 @@ def _build_presentation_text_prompt_from_template(topic, duration, detail_level,
     logging.debug("Built presentation text prompt: %s", template_content)
     return template_content
 
-async def generate_stable_diffusion_prompt(title: str) -> str:
+async def generate_stable_diffusion_prompt(title: str):
     payload = {
         "input_text": _build_stable_diffusion_prompt_from_template(title),
     }
@@ -67,7 +70,12 @@ async def generate_stable_diffusion_prompt(title: str) -> str:
             response = await client.post(LLM_SERVICE_URL, json=payload)
             response.raise_for_status()
             logging.info("Received response from LLM service for stable diffusion prompt")
-            return response.json()["response_text"]
+            text = response.json()["response_text"]
+            dictionary = json.loads(text)
+            return {
+                "prompt": dictionary["prompt"],
+                "negative_prompt": dictionary["negative_prompt"]
+            }
         except httpx.HTTPError as e:
             logging.error("HTTP error occurred while calling LLM service: %s", e)
             raise
