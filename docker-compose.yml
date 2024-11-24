@@ -73,6 +73,32 @@ services:
     networks:
       - my_network
 
+  nextjs:
+    <<: *common
+    build:
+      context: ./www/promptvisionui
+      dockerfile: Dockerfile
+    container_name: promptvisionui-nextjs
+    environment:
+      - NODE_ENV=production
+    expose:
+      - "3000"
+    networks:
+      - my_network
+
+  nginx:
+    <<: *common
+    build:
+      context: ./www/promptvisionui/nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"  # For SSL
+    depends_on:
+      - nextjs
+    networks:
+      - my_network
+
 networks:
   my_network:
     driver: bridge
