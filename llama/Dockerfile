@@ -17,7 +17,5 @@ COPY . /app
 # Expose the port that the FastAPI app will run on
 EXPOSE 9000
 
-
-
 # Command to run the application
 CMD ["python", "-m", "uvicorn", "api:app", "--host", "0.0.0.0", "--port", "9000"]

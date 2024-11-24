@@ -1,36 +1,42 @@
-import httpx
+import requests
+from pathlib import Path
 from typing import List
-from storage import get_storage_service
-import tempfile
-import os
+import logging
 
-DEEPFAKE_SERVICE_URL = "http://deepfake-service:8005/generate"
+DEEPFAKE_SERVICE_URL = "http://37.189.137.45:7000/generate"
+
+logging.basicConfig(level=logging.INFO)
 
 async def generate_deepfake_videos(character: str, audio_file_paths: List[str]) -> List[str]:
-    """
-    payload = {
-        "character": character,
-    }
-    async with httpx.AsyncClient() as client:
-        response = await client.post(DEEPFAKE_SERVICE_URL, json=payload)
-        response.raise_for_status()
-        video_content = response.content
+    generated_video_paths = []
+    generate_deepfake_url = f"{DEEPFAKE_SERVICE_URL}/generate-deepfake"
 
-    # Save video to a temporary file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_file:
-        tmp_file.write(video_content)
-        tmp_file_path = tmp_file.name
+    output_directory = Path("videos")
+    output_directory.mkdir(parents=True, exist_ok=True)
 
-    # Upload to the chosen storage backend and get the URL
-    storage_service = get_storage_service()
-    video_url = storage_service.upload_video(tmp_file_path, host_url=host_url)
-
-    # Clean up the temporary file if using local storage
-    if os.getenv("STORAGE_BACKEND") != "s3":
-        os.remove(tmp_file_path)
-    """
-
-    files = []
     for audio_file_path in audio_file_paths:
-        files.append("videos/john-china.mp4")
-    return files
+        audio_filename = Path(audio_file_path).name
+        output_video_filename = output_directory / f"deepfake_{character}_{audio_filename}.mp4"
+
+        with open(audio_file_path, 'rb') as audio_file:
+            files = {'audio': (audio_filename, audio_file, 'audio/wav')}
+            data = {'character': character}
+
+            try:
+                logging.info(f"Generating deepfake for {audio_filename}...")
+                response = requests.post(generate_deepfake_url, data=data, files=files, stream=True)
+                if response.status_code == 200:
+                    logging.info(f"Saving deepfake for {audio_filename} as {output_video_filename}...")
+                    with open(output_video_filename, 'wb') as f:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            if chunk:
+                                f.write(chunk)
+
+                    logging.info(f"Generated deepfake for {audio_filename} as {output_video_filename}")
+                    generated_video_paths.append(str(output_video_filename))
+                else:
+                    logging.error(f"Error generating deepfake for {audio_filename}: {response.text}")
+            except Exception as e:
+                logging.error(f"An error occurred while generating deepfake for {audio_filename}: {e}")
+
+    return generated_video_paths
