@@ -42,7 +42,7 @@ def extract_scripts_from_presentation_content(content):
 
     scripts = []
     for slide in content['slides']:
-        if slide.get('type') == "main" and 'script' in slide:
+        if 'script' in slide:
             scripts.append(slide['script'])
 
     return scripts

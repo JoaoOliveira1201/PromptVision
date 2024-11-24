@@ -2,11 +2,11 @@ x-common-configuration: &common
   restart: unless-stopped
   volumes:
     - ./data:/app/data
-  #shm_size: '12gb'  # Common shared memory size for all services
-  #deploy:
-  #  resources:
-  #    limits:
-  #      memory: 12G  # Common memory limit for all services
+  shm_size: '12gb'  # Common shared memory size for all services
+  deploy:
+    resources:
+      limits:
+        memory: 12G  # Common memory limit for all services
 
 services:
   text_to_speech_service:
