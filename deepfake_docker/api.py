@@ -4,6 +4,13 @@ from pathlib import Path
 import logging
 import sys
 import datetime
+import os
+import subprocess
+import tempfile
+from pathlib import Path
+import datetime
+import os
+import io
 
 app = Bottle()
 
@@ -23,6 +30,7 @@ CHARACTERS_DIR = Path("/app/characters")
 WAV2LIP_MODEL_PATH = "Wav2Lip/checkpoints/wav2lip_gan.pth"
 WAV2LIP_SCRIPT_PATH = "Wav2Lip/inference.py"
 CHARACTERS_DIR.mkdir(parents=True, exist_ok=True)
+
 
 @app.post('/generate-deepfake')
 def generate_deepfake():
@@ -50,7 +58,6 @@ def generate_deepfake():
 
     # Save the uploaded audio file temporarily
     audio_path = UPLOAD_DIR / audio.filename
-    output_path = OUTPUT_DIR / f"deepfake_{audio.filename}_{character_name}"
 
     try:
         audio.save(str(audio_path))
@@ -59,6 +66,8 @@ def generate_deepfake():
         logger.error(f"Failed to save audio file: {e}")
         response.status = 500
         return {"error": "Failed to save audio file"}
+
+    output_path = OUTPUT_DIR / f"deepfake_{os.path.splitext(audio.filename)[0]}_{character_name}.mp4"
 
     # Run Wav2Lip inference with subprocess
     command = [
@@ -88,6 +97,12 @@ def generate_deepfake():
         logger.exception(f"Unexpected error during Wav2Lip inference: {e}")
         response.status = 500
         return {"error": "An unexpected error occurred during processing"}
+    finally:
+        # Cleanup temporary files
+        try:
+            audio_path.unlink()
+        except Exception as e:
+            logger.warning(f"Failed to clean up temporary files: {e}")
 
     if not output_path.exists():
         logger.error(f"Output file {output_path} does not exist after inference")
@@ -105,6 +120,7 @@ def generate_deepfake():
         response.status = 500
         return {"error": "Failed to send the generated video"}
 
+
 @app.post('/upload-character')
 def upload_character():
     logger.info("Received request to /upload-character")
@@ -115,16 +131,48 @@ def upload_character():
         response.status = 400
         return {"error": "Video file is required"}
 
-    # Log the filename
     logger.debug(f"Character video filename: {video.filename}")
 
-    # Save the video to the /app/characters directory
-    character_video_path = CHARACTERS_DIR / video.filename
-
     try:
-        video.save(str(character_video_path))
-        logger.info(f"Saved character video file to {character_video_path}")
-        return {"message": "Character video uploaded successfully"}
+        # Convert the video to MP4 if it's in WebM format
+        if video.filename.lower().endswith('.webm'):
+            logger.info("Converting WebM video to MP4 format")
+            try:
+                mp4_content = convert_webm_to_mp4(video)
+
+                # Create a new filename with .mp4 extension
+                mp4_filename = os.path.splitext(video.filename)[0] + '.mp4'
+                character_video_path = CHARACTERS_DIR / mp4_filename
+
+                # If file exists, remove it first
+                if character_video_path.exists():
+                    logger.info(f"Removing existing file: {character_video_path}")
+                    character_video_path.unlink()
+
+                # Save the converted MP4 content
+                with open(str(character_video_path), 'wb') as f:
+                    f.write(mp4_content)
+
+                logger.info(f"Saved converted MP4 video to {character_video_path}")
+                return {"message": "Character video converted and uploaded successfully"}
+
+            except (subprocess.CalledProcessError, Exception) as e:
+                logger.error(f"Video conversion failed: {str(e)}")
+                response.status = 500
+                return {"error": "Failed to convert video format"}
+        else:
+            # Save the original video if it's not WebM
+            character_video_path = CHARACTERS_DIR / video.filename
+
+            # If file exists, remove it first
+            if character_video_path.exists():
+                logger.info(f"Removing existing file: {character_video_path}")
+                character_video_path.unlink()
+
+            video.save(str(character_video_path))
+            logger.info(f"Saved original video file to {character_video_path}")
+            return {"message": "Character video uploaded successfully"}
+
     except Exception as e:
         logger.error(f"Failed to save character video file: {e}")
         response.status = 500
@@ -141,3 +189,74 @@ def list_characters():
         logger.error(f"Failed to list characters: {e}")
         response.status = 500
         return {"error": "Failed to list characters"}
+
+
+def convert_webm_to_mp4(webm_video):
+    """
+    Convert WebM video to MP4 format using FFmpeg.
+
+    Args:
+        webm_video: Video file object (from request.files)
+
+    Returns:
+        bytes: Converted MP4 video content
+
+    Raises:
+        subprocess.CalledProcessError: If FFmpeg conversion fails
+        Exception: For other errors during conversion
+    """
+    temp_input = None
+    temp_output = None
+
+    try:
+        # Generate unique temporary filenames
+        temp_input_fd, temp_input_path = tempfile.mkstemp(suffix='.webm')
+        temp_output_fd, temp_output_path = tempfile.mkstemp(suffix='.mp4')
+
+        # Close the file descriptors (we'll use the paths with open())
+        os.close(temp_input_fd)
+        os.close(temp_output_fd)
+
+        # Save input video to temporary file
+        with open(temp_input_path, 'wb') as f:
+            webm_video.save(f)
+
+        # Run FFmpeg conversion
+        command = [
+            'ffmpeg',
+            '-y',
+            '-i', temp_input_path,
+            '-c:v', 'libx264',
+            '-c:a', 'aac',
+            '-strict', 'experimental',
+            '-b:a', '192k',
+            temp_output_path
+        ]
+
+        result = subprocess.run(command)
+
+        # Verify the output file exists and has size greater than 0
+        if not os.path.exists(temp_output_path) or os.path.getsize(temp_output_path) == 0:
+            raise Exception("Conversion failed: Output file is empty or does not exist")
+
+        # Read the converted video content
+        with open(temp_output_path, 'rb') as f:
+            mp4_content = f.read()
+
+        return mp4_content
+
+    except subprocess.CalledProcessError as e:
+        logger.error(f"FFmpeg conversion failed: {e.stderr.decode()}")
+        raise
+    except Exception as e:
+        logger.error(f"Conversion error: {str(e)}")
+        raise
+    finally:
+        # Cleanup temporary files
+        try:
+            if temp_input_path and os.path.exists(temp_input_path):
+                os.unlink(temp_input_path)
+            if temp_output_path and os.path.exists(temp_output_path):
+                os.unlink(temp_output_path)
+        except Exception as e:
+            logger.warning(f"Failed to cleanup temporary files: {e}")

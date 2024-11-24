@@ -43,6 +43,7 @@ def test_endpoints(base_url, character_video_path, audio_file_path):
 
     # Use the character we just uploaded
     character_name = character_video_filename
+    character_name = character_name.replace('webm', 'mp4')
 
     with open(audio_file_path, 'rb') as audio_file:
         files = {'audio': (audio_filename, audio_file, 'audio/wav')}
@@ -66,6 +67,6 @@ def test_endpoints(base_url, character_video_path, audio_file_path):
 if __name__ == "__main__":
     base_url = "http://localhost:7000"  # Replace with your server's base URL
     audio_file = "/home/joao/Desktop/PromptVision/deepfake_docker/testFiles/do_not_redeem_the_card.mp3"
-    character_video_file = "/home/joao/Desktop/PromptVision/deepfake_docker/kim_wexler.mp4"
+    character_video_file = "/home/joao/Desktop/PromptVision/deepfake_docker/testFiles/andrecabecudo.webm"
 
     test_endpoints(base_url, character_video_file, audio_file)
