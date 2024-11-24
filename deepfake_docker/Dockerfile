@@ -33,6 +33,9 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 # Copy the rest of the app files into the container
 COPY . /app
 
+RUN mkdir /app/characters
+RUN chmod -R 777 /app/characters
+
 # Ensure necessary directories exist
 RUN mkdir -p /app/uploads /app/outputs /app/characters /app/temp
 

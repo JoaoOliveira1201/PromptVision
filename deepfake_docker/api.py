@@ -19,8 +19,10 @@ logger.addHandler(handler)
 # Constants
 UPLOAD_DIR = Path("/app/uploads")
 OUTPUT_DIR = Path("/app/outputs")
+CHARACTERS_DIR = Path("/app/characters")
 WAV2LIP_MODEL_PATH = "Wav2Lip/checkpoints/wav2lip_gan.pth"
 WAV2LIP_SCRIPT_PATH = "Wav2Lip/inference.py"
+CHARACTERS_DIR.mkdir(parents=True, exist_ok=True)
 
 @app.post('/generate-deepfake')
 def generate_deepfake():
@@ -108,32 +110,36 @@ def generate_deepfake():
 @app.post('/upload-character')
 def upload_character():
     logger.info("Received request to /upload-character")
+    video = request.files.get('video')
 
-    character = request.files.get('character')
-    character_name = request.files.get('character_name')
-
-    # Check if a file is provided
-    if not character:
-        logger.warning("Missing character file in the request")
+    if not video:
+        logger.warning("No video file in the request")
         response.status = 400
-        return {"error": "Character file is required"}
+        return {"error": "Video file is required"}
 
-    if not character_name:
-        logger.warning("Missing character name in the request")
-        response.status = 400
-        return {"error": "Character name is required"}
+    # Log the filename
+    logger.debug(f"Character video filename: {video.filename}")
 
-    logger.debug(f"Character filename: {character.filename}")
-    logger.debug(f"Character name: {character_name}")
-
-    character_path = UPLOAD_DIR / character_name + ".mp4"
+    # Save the video to the /app/characters directory
+    character_video_path = CHARACTERS_DIR / video.filename
 
     try:
-        character.save(str(character_path))
-        logger.info(f"Saved character file to {character_path}")
+        video.save(str(character_video_path))
+        logger.info(f"Saved character video file to {character_video_path}")
+        return {"message": "Character video uploaded successfully"}
     except Exception as e:
-        logger.error(f"Failed to save character file: {e}")
+        logger.error(f"Failed to save character video file: {e}")
         response.status = 500
-        return {"error": "Failed to save character file"}
+        return {"error": "Failed to save character video file"}
 
-    return {"message": "Character file uploaded successfully"}
+@app.get('/list-characters')
+def list_characters():
+    logger.info("Received request to /list-characters")
+    try:
+        characters = [f.name for f in CHARACTERS_DIR.iterdir() if f.is_file()]
+        logger.debug(f"Available characters: {characters}")
+        return {"characters": characters}
+    except Exception as e:
+        logger.error(f"Failed to list characters: {e}")
+        response.status = 500
+        return {"error": "Failed to list characters"}
