@@ -12,6 +12,7 @@ const GenerateVideo = () => {
   const [isChecked, setIsChecked] = useState(false); // State to control the checkbox
   const [selectedDetailLevel, setSelectedDetailLevel] = useState(null);
   const [activeLanguage, setActiveLanguage] = useState('English');
+  const [inputNumber, setInputNumber] = useState('');
 
   const handleCheckboxChange = () => {
     setIsChecked(!isChecked); // Toggle checkbox state
@@ -31,6 +32,18 @@ const GenerateVideo = () => {
 
   const handleLanguageSelect = (language) => {
     setActiveLanguage(language); // Set the active language
+  };
+
+  const handleInputChange = (event) => {
+    const value = event.target.value;
+    if (/^\d*$/.test(value)) {
+      setInputNumber(value); // Only allow numbers
+    }
+  };
+
+  const handleInputSubmit = () => {
+    alert(`You entered: ${inputNumber}`);
+    // You can add any functionality here to process the number
   };
 
   return (
@@ -60,6 +73,18 @@ const GenerateVideo = () => {
         </div>
 
         <h2 className={styles.detailLevelTitle}>Detail level</h2>
+
+        <h2 className={styles.duration}>Enter the duration</h2>
+          <div className={styles.duration}>
+            <input
+              type="text"
+              className={styles.numberInput}
+              value={inputNumber}
+              onChange={handleInputChange}
+              placeholder="Enter a number"
+            />
+            
+          </div>
         <div className={styles.detailLevelOptions}>
             <button 
               className={`${styles.levelButton} ${selectedDetailLevel === 'Basic' ? styles.selected : ''}`}

@@ -18,6 +18,8 @@ services:
     container_name: text_to_speech_container
     ports:
       - "8080:8080"
+    networks:
+      - my_network
 
   deepfake_service:
     <<: *common
@@ -32,6 +34,20 @@ services:
     container_name: deepfake_container
     ports:
       - "7000:8080"
+    networks:
+      - my_network
+
+  llama:
+    <<: *common
+    build:
+      context: ./llama
+      dockerfile: Dockerfile
+    image: llama_image:latest
+    container_name: llama_container
+    ports:
+      - "9000:9000"
+    networks:
+      - my_network
 
   backend:
     <<: *common
@@ -42,6 +58,9 @@ services:
     container_name: backend_container
     ports:
       - "8000:8000"
-    depends_on:
-      - text_to_speech_service
-      - deepfake_service
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: bridge

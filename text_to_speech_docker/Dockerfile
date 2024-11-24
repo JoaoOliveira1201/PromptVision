@@ -71,7 +71,7 @@ COPY api.py .
 EXPOSE 8080
 
 # Install Gunicorn (if not already in requirements.txt)
-RUN pip install --no-cache-dir gunicorn
+RUN pip install --no-cache-dir uvicorn
 
 # Everyone is sudo. We trust everyone.
 RUN echo "ALL ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
@@ -82,4 +82,4 @@ RUN echo "ALL ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 #    NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
 
 # Define the entrypoint to run the API using Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "4", "--threads", "2", "api:app"]
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "4"]

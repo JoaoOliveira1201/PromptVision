@@ -6,10 +6,10 @@ import os
 
 DEEPFAKE_SERVICE_URL = "http://deepfake-service:8005/generate"
 
-async def generate_deepfake_video(images: List[str], audio_url: str, host_url: str) -> str:
+async def generate_deepfake_videos(character: str, audio_file_paths: List[str]) -> List[str]:
+    """
     payload = {
-        "images": images,
-        "audio_url": audio_url
+        "character": character,
     }
     async with httpx.AsyncClient() as client:
         response = await client.post(DEEPFAKE_SERVICE_URL, json=payload)
@@ -28,5 +28,9 @@ async def generate_deepfake_video(images: List[str], audio_url: str, host_url: s
     # Clean up the temporary file if using local storage
     if os.getenv("STORAGE_BACKEND") != "s3":
         os.remove(tmp_file_path)
+    """
 
-    return video_url
+    files = []
+    for audio_file_path in audio_file_paths:
+        files.append("videos/john-china.mp4")
+    return files

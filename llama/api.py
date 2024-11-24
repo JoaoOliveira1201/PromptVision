@@ -54,7 +54,7 @@ async def chat(request: ChatRequest):
             modelId="meta.llama3-1-70b-instruct-v1:0",
             messages=conversation,
             inferenceConfig={
-                "maxTokens": max_tokens,
+                "maxTokens": 4000,
                 "temperature": 0.5,
                 "topP": 0.9,
             },

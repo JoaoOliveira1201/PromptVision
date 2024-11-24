@@ -1,0 +1,44 @@
+Generate a JSON object containing a "prompt" and a "negative_prompt" for Stable Diffusion to create an image based on the slide title: "[Slide Title]". The "prompt" should provide a detailed description of the desired image, including subject, style, setting, and specific elements to include, ensuring it aligns closely with the given slide title. The "negative_prompt" should list elements or styles to avoid in the image.
+
+**Examples:**
+
+1. Slide Title: "Pollution in the Oceans"
+
+   {
+     "prompt": "A realistic depiction of a polluted ocean scene. The water is filled with plastic debris, oil slicks, and discarded fishing nets. Marine life, such as fish and turtles, are shown entangled in waste, highlighting the dire impact of pollution. The sky is overcast, adding to the somber mood of the image.",
+     "negative_prompt": "clean water, pristine beaches, healthy marine life, clear skies, vibrant colors"
+   }
+
+2. Slide Title: "Advancements in Artificial Intelligence"
+
+   {
+     "prompt": "A futuristic scene showcasing a humanoid robot interacting seamlessly with humans in a modern cityscape. Digital interfaces and holograms are visible, indicating advanced technology integration. The atmosphere is bright and optimistic, reflecting the positive impact of AI advancements.",
+     "negative_prompt": "outdated technology, dystopian setting, dark and gloomy atmosphere, malfunctioning robots"
+   }
+
+3. Slide Title: "Renewable Energy Sources"
+
+   {
+     "prompt": "An expansive landscape featuring various renewable energy installations: wind turbines on rolling hills, solar panels covering rooftops, and a hydroelectric dam in the background. The scene is bathed in natural sunlight, emphasizing a clean and sustainable environment.",
+     "negative_prompt": "fossil fuel plants, pollution, overcast skies, barren landscapes, traditional power lines"
+   }
+
+4. Slide Title: "Cultural Diversity in Urban Areas"
+
+   {
+     "prompt": "A vibrant urban street scene showcasing people from various cultural backgrounds engaging in daily activities. Colorful storefronts display diverse cuisines and traditional attire. Street art and murals celebrate multiculturalism, creating a lively and inclusive atmosphere.",
+     "negative_prompt": "homogeneous crowd, monochromatic color scheme, empty streets, lack of cultural elements"
+   }
+
+5. Slide Title: "Space Exploration Milestones"
+
+   {
+     "prompt": "A dramatic depiction of a spacecraft launching into the starry expanse of space. The foreground shows mission control with scientists and engineers celebrating. Planets and stars are visible, highlighting the vastness of the cosmos and human achievement in space exploration.",
+     "negative_prompt": "failed missions, dark and ominous space, empty launch pads, lack of human presence"
+   }
+
+**Your Task:**
+
+Based on the slide title provided, generate a JSON object with a "prompt" and a "negative_prompt" following the structure and detail demonstrated in the examples above.
+
+Please provide only the JSON object in your response, without any additional text or explanations.

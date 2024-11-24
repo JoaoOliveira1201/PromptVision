@@ -12,6 +12,8 @@ const LandingPage = () => {
   const handleGetStarted = () => {
     router.push('/generate-video'); 
   };
+
+  
   return (
     
     <div className={styles.container}>

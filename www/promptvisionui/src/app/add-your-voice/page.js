@@ -76,6 +76,12 @@ const AddYourVoicePage = () => {
     }
   };
 
+  useEffect(() => {
+    return () => {
+      clearInterval(timerRef.current);
+    };
+  }, []);
+
   const startTimer = () => {
     elapsedTimeRef.current = 0; // Reset the ref
     setElapsedTime(0); // Reset the visible state
@@ -142,7 +148,7 @@ const AddYourVoicePage = () => {
 
         <div className={styles.buttonGroup}>
           <button className={styles.cancelButton} onClick={handleStopRecording}>
-            <span>Cancel</span>
+            <span>Stop</span>
           </button>
           <button className={styles.startRecordingButton} onClick={handleStartRecording}>
             <span>Start recording</span>
