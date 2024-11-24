@@ -81,5 +81,7 @@ RUN echo "ALL ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 #    NVIDIA_REQUIRE_CUDA="cuda>=11.7" \
 #    NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
 
+
+
 # Define the entrypoint to run the API using Gunicorn
 CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "4"]

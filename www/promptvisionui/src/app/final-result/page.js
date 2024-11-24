@@ -1,52 +1,63 @@
-/* eslint-disable @next/next/no-img-element */
-/* eslint-disable react/no-unescaped-entities */
 'use client';
 
 import styles from './FinalResults.module.css';
 import { useRouter } from 'next/navigation';
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const FinalResultsPage = () => {
   const router = useRouter();
+  const [videoUrl, setVideoUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  useEffect(() => {
+    // Function to fetch video URL from backend
+    const fetchVideo = async () => {
+      try {
+        setLoading(true);
+        // Replace with your actual API endpoint
+        const response = await fetch('/api/get-generated-video');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch video');
+        }
 
-  const [backgroundColor, setBackgroundColor] = useState('#FF0000');
-  const [mainColor, setMainColor] = useState('#0000FF');
-  const [secondaryColor, setSecondaryColor] = useState('#800080');
+        const data = await response.json();
+        setVideoUrl(data.videoUrl);
+      } catch (err) {
+        console.error('Error fetching video:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-   // Ref for the file input
-   const fileInputRef = useRef(null);
-   const audioInputRef = useRef(null);
+    fetchVideo();
+  }, []);
 
-  
- 
-   // Trigger the hidden file input when button is clicked
-   const handleImageUploadClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
-  const handleAudioUploadClick = () => {
-    if (audioInputRef.current) {
-      audioInputRef.current.click();
-    }
-  };
- 
-   // Handle file selection (optional)
-   const handleFileChange = (event) => {
-     const files = event.target.files;
-     console.log(files); // Do something with the files if needed
-   };
-
-   const handleAudioFileChange = (event) => {
-    const files = event.target.files;
-    console.log("Selected audio files:", files); // Do something with the audio files if needed
-  };
   const handleGoBack = () => {
-    router.push('/generate-video'); // Navigate to the '/generate-video' route
+    router.push('/generate-video');
   };
- 
+
+  const handleDownload = async () => {
+    if (videoUrl) {
+      try {
+        const response = await fetch(videoUrl);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'presentation-video.mp4'; // Or get filename from backend
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } catch (err) {
+        console.error('Error downloading video:', err);
+        // Handle download error (show message to user)
+      }
+    }
+  };
 
   return (
     <div className={styles.container}>
@@ -56,80 +67,17 @@ const FinalResultsPage = () => {
           <span>Vision</span>
         </h1>
 
-        <div className={styles.section}>
-      <h3 className={styles.sectionTitle}>Colors</h3>
-      <div className={styles.colorGroups}>
-        <div className={styles.colorGroup}>
-          <span>Background</span>
-          <div className={styles.colorDotSquare} style={{ backgroundColor }}></div>
-          <input
-            type="color"
-            value={backgroundColor}
-            onChange={(e) => setBackgroundColor(e.target.value)}
-            className={styles.colorPickerCircle}
-          />
-        </div>
-        <div className={styles.colorGroup}>
-          <span>Main colors</span>
-          <div className={styles.colorDotSquare} style={{ backgroundColor: mainColor }}></div>
-          <input
-            type="color"
-            value={mainColor}
-            onChange={(e) => setMainColor(e.target.value)}
-            className={styles.colorPickerCircle}
-          />
-        </div>
-        <div className={styles.colorGroup}>
-          <span>Secondary colors</span>
-          <div className={styles.colorDotSquare} style={{ backgroundColor: secondaryColor }}></div>
-          <input
-            type="color"
-            value={secondaryColor}
-            onChange={(e) => setSecondaryColor(e.target.value)}
-            className={styles.colorPickerCircle}
-          />
-        </div>
-      </div>
-    </div>
-
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Images</h3>
-          <button className={styles.dropButton}  onClick={handleImageUploadClick}>
-            Drop your custom images
-          </button>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            style={{ display: 'none' }}
-            accept="image/*" // Only allows image files
-          />
-        </div>
-
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Sound</h3>
-          <button className={styles.dropButton} onClick={handleAudioUploadClick}>
-            Drop your custom soundtrack
-          </button>
-          <input
-            type="file"
-            ref={audioInputRef}
-            onChange={handleAudioFileChange}
-            style={{ display: 'none' }}
-            accept="audio/mp3" // Only allows mp3 audio files
-          />
-        </div>
-
         <div className={styles.buttonGroup}>
-          <button className={styles.redoButton}>
-            <span>Redo</span>
-          </button>
-          <button className={styles.downloadButton}>
+          <button 
+            className={styles.downloadButton}
+            onClick={handleDownload}
+            disabled={!videoUrl || loading}
+          >
             <span>Download</span>
           </button>
           <button
             className={styles.downloadButton}
-            onClick={handleGoBack} // Attach the go-back handler
+            onClick={handleGoBack}
           >
             <span>Go Back</span>
           </button>
@@ -137,11 +85,36 @@ const FinalResultsPage = () => {
       </div>
 
       <div className={styles.rightPanel}>
-      <img src="/planets.png" alt="Top Image" className={styles.topImage} />
-        <div className={styles.videoPlaceholder}>
-          <div className={styles.videoIcon}>📹</div>
+        <img src="/planets.png" alt="Top Image" className={styles.topImage} />
+        <div className={styles.videoContainer}>
+          {loading ? (
+            <div className={styles.loadingState}>
+              <div className={styles.spinner}></div>
+              <p>Loading your presentation video...</p>
+            </div>
+          ) : error ? (
+            <div className={styles.errorState}>
+              <p>Error loading video: {error}</p>
+              <button onClick={() => window.location.reload()}>
+                Try Again
+              </button>
+            </div>
+          ) : videoUrl ? (
+            <video
+              className={styles.video}
+              controls
+              playsInline
+              poster="/video-thumbnail.jpg" // Optional: Add a thumbnail while video loads
+            >
+              <source src={videoUrl} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          ) : (
+            <div className={styles.noVideoState}>
+              <p>No video available</p>
+            </div>
+          )}
         </div>
-    
       </div>
     </div>
   );

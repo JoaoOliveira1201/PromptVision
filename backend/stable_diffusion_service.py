@@ -22,6 +22,9 @@ async def generate_images(titles: List[str]) -> List[str]:
         prompt = await generate_stable_diffusion_prompt(title)
         prompts.append(prompt)
 
+    output_dir = "photos"
+    os.makedirs(output_dir, exist_ok=True)
+
     file_paths = []
     # the stable diffusion service accepts a payload of "prompt" and "negative_prompt"
     for idx,prompt in enumerate(prompts):
@@ -65,4 +68,12 @@ def save_base64_as_png(base64_string: str, output_path: str) -> None:
     cv2.imwrite(output_path, image)
 
 if __name__ == "__main__":
-    asyncio.run(generate_images(["A beautiful sunset", "A cute puppy"]))
+    titles = ["A beautiful sunset", "A cute puppy"]
+    
+    # Run the generate_images function and get the file paths
+    file_paths = asyncio.run(generate_images(titles))
+    
+    # Print the file paths
+    print("Generated image file paths:")
+    for path in file_paths:
+        print(path)

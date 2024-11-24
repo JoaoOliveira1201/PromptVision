@@ -1,24 +1,32 @@
-/* eslint-disable @next/next/no-img-element */
 // pages/generate-video.js
 'use client';
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-
-import styles from './GenerateVideo.module.css'; 
+import styles from './GenerateVideo.module.css';
 
 const GenerateVideo = () => {
   const router = useRouter();
   const fileInputRef = useRef(null);
 
-  const [isChecked, setIsChecked] = useState(false); // State to control the checkbox
+  // Form States
+  const [isChecked, setIsChecked] = useState(false);
   const [selectedDetailLevel, setSelectedDetailLevel] = useState(null);
   const [activeLanguage, setActiveLanguage] = useState('English');
   const [inputNumber, setInputNumber] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
-  const [topicText, setTopicText] = useState(''); // State to hold topic input
-  const [savedTopic, setSavedTopic] = useState(''); // State to save the topic
   const [selectedFileName, setSelectedFileName] = useState('');
+  const [selectedVoice, setSelectedVoice] = useState('Default - Man');
+  const [selectedMusic, setSelectedMusic] = useState('Background music');
 
+  // Modal States
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [topicText, setTopicText] = useState('');
+  const [savedTopic, setSavedTopic] = useState('');
+
+  // API States
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // File Handling
   const handleFileButtonClick = () => {
     fileInputRef.current.click();
   };
@@ -27,8 +35,6 @@ const GenerateVideo = () => {
     const file = event.target.files[0];
     if (file) {
       setSelectedFileName(file.name);
-      
-      // Read the file content
       const reader = new FileReader();
       reader.onload = (e) => {
         const content = e.target.result;
@@ -38,78 +44,134 @@ const GenerateVideo = () => {
     }
   };
 
+  // Form Controls
   const handleCheckboxChange = () => {
-    setIsChecked(!isChecked); // Toggle checkbox state
-  };
-
-  const handleLearnMoreClick = () => {
-    router.push('/add-your-voice'); // Replace with the actual route to the page
-  };
-
-  const handleGenerate = () => {
-    router.push('/final-result');
+    setIsChecked(!isChecked);
   };
 
   const handleDetailLevelClick = (level) => {
-    setSelectedDetailLevel(level); // Set the selected detail level
+    setSelectedDetailLevel(level);
   };
 
   const handleLanguageSelect = (language) => {
-    setActiveLanguage(language); // Set the active language
+    setActiveLanguage(language);
   };
 
   const handleInputChange = (event) => {
     const value = event.target.value;
     if (/^\d*$/.test(value)) {
-      setInputNumber(value); // Only allow numbers
+      setInputNumber(value);
     }
   };
 
-  const handleInputSubmit = () => {
-    alert(`You entered: ${inputNumber}`);
-    // You can add any functionality here to process the number
-  };
-
-
+  // Modal Controls
   const handleModalOpen = () => {
     setIsModalOpen(true);
-    setTopicText(''); // Clear text when opening modal
+    setTopicText('');
   };
 
   const handleModalClose = () => {
     setIsModalOpen(false);
-    setTopicText(''); // Clear text when closing modal
+    setTopicText('');
   };
 
   const handleSaveTopic = () => {
-    setSavedTopic(topicText); // Save the topic to a variable
-    setIsModalOpen(false); // Close the modal
-    setTopicText(''); 
+    setSavedTopic(topicText);
+    setIsModalOpen(false);
+    setTopicText('');
   };
+
+  // Navigation
+  const handleLearnMoreClick = () => {
+    router.push('/add-your-voice');
+  };
+
+  // Form Submission
+  const handleGenerate = async () => {
+    try {
+      // Validation
+      if (!inputNumber) {
+        setError('Please enter a duration');
+        return;
+      }
+      if (!selectedDetailLevel) {
+        setError('Please select a detail level');
+        return;
+      }
+      if (!savedTopic && !selectedFileName) {
+        setError('Please provide either text or a file');
+        return;
+      }
+  
+      setIsLoading(true);
+      setError(null);
+  
+      // Create FormData
+      const formData = new FormData();
+  
+      if (selectedFileName && fileInputRef.current.files[0]) {
+        formData.append('file', fileInputRef.current.files[0]);
+      } else if (savedTopic) {
+        formData.append('text', savedTopic);
+      }
+  
+      formData.append('duration', inputNumber);
+      formData.append('detail_level', selectedDetailLevel);
+      formData.append('character', selectedVoice);
+  
+      // API call
+      const response = await fetch('/api/generate-presentation', {
+        method: 'POST',
+        body: formData,
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to generate presentation');
+      }
+  
+      // Handle successful response
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+  
+      // Trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'presentation.mp4';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+  
+      router.push('/final-result');
+    } catch (err) {
+      setError(err.message);
+      console.error('Error generating presentation:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
 
   return (
     <div className={styles.container}>
-     
       {/* Left Panel */}
       <div className={styles.leftPanel}>
         <h1 className={styles.title}>Prompt Vision</h1>
-        <p className={styles.description}>
-          Add your face
-        </p>
-        <button className={styles.learnMoreButton} onClick={handleLearnMoreClick}>Learn more</button>
-        <img 
-      src="/rocket.png" 
-      alt="Decorative Image" 
-      className={styles.leftPanelImage}
-       />
+        <p className={styles.description}>Add your face</p>
+        <button className={styles.learnMoreButton} onClick={handleLearnMoreClick}>
+          Learn more
+        </button>
+        <img src="/rocket.png" alt="Decorative Image" className={styles.leftPanelImage} />
       </div>
 
       {/* Right Panel */}
       <div className={styles.rightPanel}>
-      <div className={styles.contentWrapper}>
-        <h2 className={styles.topicTitle}>Topic</h2>
-        <div className={styles.topicInputs}>
-        <button className={styles.fileButton} onClick={handleModalOpen}>
+        <div className={styles.contentWrapper}>
+          {/* Topic Section */}
+          <h2 className={styles.topicTitle}>Topic</h2>
+          <div className={styles.topicInputs}>
+            <button className={styles.fileButton} onClick={handleModalOpen}>
               Write the topic
             </button>
             <input
@@ -122,90 +184,109 @@ const GenerateVideo = () => {
             <button className={styles.fileButton} onClick={handleFileButtonClick}>
               {selectedFileName || 'Drop your file'}
             </button>
-        </div>
+          </div>
 
-        <h2 className={styles.detailLevelTitle}>Detail level</h2>
+          {/* Detail Level Section */}
+          <h2 className={styles.detailLevelTitle}>Detail level</h2>
+          <div className={styles.detailLevelOptions}>
+            {['Basic', 'Intermediate', 'World class'].map((level) => (
+              <button
+                key={level}
+                className={`${styles.levelButton} ${
+                  selectedDetailLevel === level ? styles.selected : ''
+                }`}
+                onClick={() => handleDetailLevelClick(level)}
+              >
+                {level}
+              </button>
+            ))}
+          </div>
 
-        <h2 className={styles.duration}>Enter the duration</h2>
-          <div className={styles.duration}>
+          {/* Duration Section */}
+          <h2 className={styles.duration}>Enter the duration</h2>
+          <div className={styles.durationContainer}>
             <input
               type="text"
               className={styles.numberInput}
               value={inputNumber}
               onChange={handleInputChange}
-              placeholder="Enter a number"
+              placeholder="Enter duration in minutes"
             />
-            
-          </div>
-        <div className={styles.detailLevelOptions}>
-            <button 
-              className={`${styles.levelButton} ${selectedDetailLevel === 'Basic' ? styles.selected : ''}`}
-              onClick={() => handleDetailLevelClick('Basic')}
-            >
-              Basic
-            </button>
-            <button 
-              className={`${styles.levelButton} ${selectedDetailLevel === 'Intermediate' ? styles.selected : ''}`}
-              onClick={() => handleDetailLevelClick('Intermediate')}
-            >
-              Intermediate
-            </button>
-            <button 
-              className={`${styles.levelButton} ${selectedDetailLevel === 'World class' ? styles.selected : ''}`}
-              onClick={() => handleDetailLevelClick('World class')}
-            >
-              World class
-            </button>
           </div>
 
-        <h2 className={styles.voiceTitle}>Voice</h2>
-        <div className={styles.languageOptions}>
-        <button 
-              className={`${styles.languageButton} ${activeLanguage === 'English' ? styles.active : ''}`}
+          {/* Voice Section */}
+          <h2 className={styles.voiceTitle}>Voice</h2>
+          <div className={styles.languageOptions}>
+            <button
+              className={`${styles.languageButton} ${
+                activeLanguage === 'English' ? styles.active : ''
+              }`}
               onClick={() => handleLanguageSelect('English')}
             >
               English <img src="/ENG.png" alt="GB" className={styles.flag} />
             </button>
-            <button 
-              className={`${styles.languageButton} ${activeLanguage === 'Português' ? styles.active : ''}`}
+            <button
+              className={`${styles.languageButton} ${
+                activeLanguage === 'Português' ? styles.active : ''
+              }`}
               onClick={() => handleLanguageSelect('Português')}
             >
               Português <img src="/PT.png" alt="PT" className={styles.flag} />
             </button>
-        </div>
+          </div>
 
-        <div className={styles.options}>
-          <label className={styles.optionLabel}>
-          <input
+          {/* Options Section */}
+          <div className={styles.options}>
+            <label className={styles.optionLabel}>
+              <input
                 type="checkbox"
                 checked={isChecked}
                 onChange={handleCheckboxChange}
-              />{'Subtitles '}
-          </label>
-          <select className={styles.voiceSelector}>
-            <option>Default - Man</option>
-            <option>Default - Woman</option>
-          </select>
-          <select className={styles.musicSelector}>
-            <option>Background music</option>
-          </select>
+              />
+              Subtitles
+            </label>
+            <select 
+              className={styles.voiceSelector}
+              value={selectedVoice}
+              onChange={(e) => setSelectedVoice(e.target.value)}
+            >
+              <option>Default - Man</option>
+              <option>Default - Woman</option>
+            </select>
+            <select 
+              className={styles.musicSelector}
+              value={selectedMusic}
+              onChange={(e) => setSelectedMusic(e.target.value)}
+            >
+              <option>Background music</option>
+            </select>
+          </div>
+
+          {/* Error Display */}
+          {error && <div className={styles.error}>{error}</div>}
+
+          {/* Generate Button */}
+          <button
+            onClick={handleGenerate}
+            className={styles.generateButton}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Generating...' : 'Generate'}
+          </button>
         </div>
-
-        <button onClick={handleGenerate} className={styles.generateButton}>Generate</button>
-      </div>
       </div>
 
-     {/* Modal */}
-     {isModalOpen && (
+      {/* Modal */}
+      {isModalOpen && (
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
             <h2>Write the Topic</h2>
             <textarea
-        className={styles.modalTextarea}
-        value={topicText}
-        onChange={(e) => setTopicText(e.target.value)}
-        placeholder="Enter your topic"
-      />
+              className={styles.modalTextarea}
+              value={topicText}
+              onChange={(e) => setTopicText(e.target.value)}
+              placeholder="Enter your topic"
+            />
             <div className={styles.modalActions}>
               <button className={styles.modalButton} onClick={handleModalClose}>
                 Cancel
@@ -215,6 +296,14 @@ const GenerateVideo = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className={styles.loadingOverlay}>
+          <div className={styles.spinner} />
+          <p>Generating your presentation...</p>
         </div>
       )}
     </div>

@@ -9,6 +9,19 @@ from PIL import Image
 import botocore
 from enum import Enum
 
+
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,  # Set to DEBUG for more detailed logs
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("app.log"),  # Logs to a file named app.log
+        logging.StreamHandler()         # Logs to the console
+    ]
+)
+
 app = FastAPI(
     title="Image Generation API",
     description="API for generating images using Amazon Titan Image Generator",
@@ -115,9 +128,15 @@ async def generate_image(request: ImageGenerationRequest):
 @app.post("/generate-and-save")
 async def generate_and_save_image(request: ImageGenerationRequest):
     try:
+        # Log the incoming request
+        logging.info(f"Received generate-and-save request: {request.json()}")
+
         # Generate the image first
         response = await generate_image(request)
-        
+
+        # Log the response from the image generation
+        logging.info(f"Generated images: {response.images}")
+
         # Process and save each generated image
         saved_paths = []
         for idx, img_b64 in enumerate(response.images):
@@ -138,7 +157,13 @@ async def generate_and_save_image(request: ImageGenerationRequest):
             path = f"data/titan/image_{idx + 1}.png"
             img.save(path)
             saved_paths.append(path)
-        
+
+            # Log each saved path
+            logging.info(f"Saved image at: {path}")
+
+        # Log the final response
+        logging.info(f"Saved paths: {saved_paths}, Config: {response.config}")
+
         return {
             "message": "Images generated and saved successfully",
             "saved_paths": saved_paths,
@@ -146,6 +171,8 @@ async def generate_and_save_image(request: ImageGenerationRequest):
         }
         
     except Exception as e:
+        # Log the error details
+        logging.error(f"Error in generate-and-save: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Failed to save images: {str(e)}"
